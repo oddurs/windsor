@@ -44,6 +44,7 @@
 #include "wav.hpp"
 #include <algorithm>
 #include <cstdio>
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <vector>
@@ -113,7 +114,17 @@ void level(std::vector<double>& left, std::vector<double>& right) {
     const double up   = 1.0 - std::exp(-1.0 / (attack  * 44100.0));
     const double down = 1.0 - std::exp(-1.0 / (release * 44100.0));
 
+    // The envelope has to START somewhere, and starting it at zero is a bug
+    // with a sound. For the first few milliseconds it is below the threshold,
+    // so the gain is 1 while every sample after it is being turned down — and
+    // those few milliseconds then become the loudest thing in the file, set
+    // the normalisation single-handed, and push the entire recording down
+    // behind a thump. Charge it from the opening instead, so the compressor
+    // is already holding the signal it is about to be handed.
     double envelope = 0.0;
+    for (std::size_t i = 0; i < std::min<std::size_t>(left.size(), 4410); ++i)
+        envelope = std::max(envelope, std::max(std::abs(left[i]), std::abs(right[i])));
+
     for (std::size_t i = 0; i < left.size(); ++i) {
         const double loudest = std::max(std::abs(left[i]), std::abs(right[i]));
         envelope += (loudest > envelope ? up : down) * (loudest - envelope);

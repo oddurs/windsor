@@ -174,6 +174,19 @@ Half a tonne, a hundred times a second, and no counterweight on a shaft
 turning at ω can oppose a force that goes at 2ω. The flat crank sounds better
 and shakes. That is the bill for the noise, and it is why almost nobody pays it.
 
+**The recording itself.** `./windsor record` writes stereo, because a V8 does
+not have an exhaust — it has two, one per bank, down opposite sides of the car,
+permanently out of step with each other on a cross-plane crank. There are two
+microphones 0.6 m apart, 1.5 m behind two tailpipes 1.0 m apart, and each one
+hears both pipes: quieter by the extra distance, later by the time sound takes
+to cross the gap. Nothing is widened or panned. The stereo image is the
+geometry, and moving the microphones moves it.
+
+Mono-summing the banks recombines them toward an even train and cancels much of
+the unevenness — real, and why people argue about H-pipes, but it throws away
+the evidence. In stereo the two pulse trains stay apart where you can hear them
+disagree.
+
 **The sound, against itself.** The whole point. Half-order energy against
 whole-order energy at idle — half-orders being the signature of a pulse train
 that repeats every *two* revolutions instead of one:
@@ -312,7 +325,7 @@ make
 ./windsor dyno       put it on a water brake and sweep it
 ./windsor run        watch it idle  (SPACE for throttle, Q to stop)
 ./windsor card       let it draw its own indicator diagram
-./windsor record     stand behind it with a microphone
+./windsor record     stand behind it with two microphones
 ./windsor verify     check every number this project quotes
 ```
 

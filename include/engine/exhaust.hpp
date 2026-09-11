@@ -169,6 +169,21 @@ private:
     double a_ = 1.0, y_ = 0.0;
 };
 
+// Three poles in series, which is what it takes to throw something away
+// properly. See the decimator below for why one is not enough.
+class Cascade {
+public:
+    void corner(double hertz, double rate) {
+        for (OnePole& p : pole_) p.corner(hertz, rate);
+    }
+    double operator()(double x) {
+        for (OnePole& p : pole_) x = p(x);
+        return x;
+    }
+private:
+    std::array<OnePole, 3> pole_{};
+};
+
 // A travelling wave, stored as the samples it has not yet arrived as.
 class DelayLine {
 public:
@@ -217,6 +232,7 @@ public:
         double plenum_volume;      // m³, the thermodynamic collector
         double outlet_area;        // m², the restriction to atmosphere
         double gas_temperature;    // K, what the pipes settle at
+        double muffler_cutoff;     // Hz — see below. Zero for open headers.
         double sample_rate;        // Hz
     };
 
@@ -252,6 +268,32 @@ public:
 
         mass_ = air::mass(si::p_atmosphere, s_.gas_temperature, s_.plenum_volume);
 
+        // ── The silencer ──────────────────────────────────────────────────
+        //
+        // Every version of this file until now vented the collector straight
+        // at the atmosphere, which is to say the engine has been running open
+        // headers, which is exactly why it sounded like it. An open-header V8
+        // is genuinely unpleasant to stand behind — that is not a modelling
+        // artefact, it is the reason mufflers were invented and the reason
+        // they are required by law.
+        //
+        // A real one is a reactive device: a box with baffles and perforated
+        // tubes and one or two reversals, which works by area changes rather
+        // than absorption, and whose transmission loss is a comb of peaks and
+        // troughs determined by chamber lengths. That geometry is not modelled
+        // here. What is modelled is its effect — three poles of transmission
+        // loss above a corner — and this is the one place in the project where
+        // a component is represented by its behaviour instead of its shape.
+        // It is marked as such rather than dressed up.
+        //
+        // The corner matters more than it looks because the ear does. A
+        // whistle sitting 35 dB below the firing frequency sounds no quieter
+        // than the firing frequency does, because human hearing is roughly
+        // that much more sensitive at 5 kHz than at 46 Hz. Loudness is not
+        // energy, and a model that is right about energy can still be
+        // unlistenable.
+        if (s_.muffler_cutoff > 0.0) silencer_.corner(s_.muffler_cutoff, rate_);
+
         // Two corners, both of them claims about the world rather than knobs.
         // The pipe's own losses, and the frequency above which the mouth stops
         // getting better at radiating — c/2πa, in ambient air, not in the hot
@@ -271,6 +313,7 @@ public:
 
         for (OnePole& f : source_) f.corner(3000.0, rate_);
         mouth_.corner(2500.0, rate_);
+        antialias_.corner(10000.0, rate_);
         radiation_.corner(ambient_sound / (si::two_pi * 0.5 * s_.collector_diameter), rate_);
     }
 
@@ -464,11 +507,27 @@ private:
         const double radiated = radiation_(leaving - previous_mouth_);
         previous_mouth_ = leaving;
 
-        // Decimate back to the file's rate. A boxcar average over the
-        // oversampled run is a crude anti-alias filter and an honest one: it
-        // is exactly what a microphone diaphragm too heavy to follow the top
-        // octave would do.
-        decimator_ += radiated;
+        // ── Down to the file's rate ───────────────────────────────────────
+        //
+        // The waveguide runs at four times the sample rate of the file, and
+        // everything above half the FILE's rate has to be gone before the
+        // rates are allowed to meet. Anything left folds: it does not vanish,
+        // it reappears at a frequency it never had, and it sounds like a
+        // whistle because that is exactly what it is.
+        //
+        // There was one. The crank steps 16.5 thousand times a second at idle,
+        // that rate is stamped on the port flows, and its third harmonic at
+        // 49 kHz folded straight down to 5.3 kHz and sat there five decibels
+        // under the firing frequency, which is audible and awful.
+        //
+        // The boxcar average that used to be the whole of the filtering here
+        // is a very poor lowpass — barely four decibels down at the frequency
+        // it most needs to stop. Three poles at ten kilohertz put the folding
+        // band forty decibels further down, which is enough, and they cost
+        // nothing that anyone wanted to hear: there is no exhaust note above
+        // ten kilohertz.
+        decimator_ += antialias_(s_.muffler_cutoff > 0.0 ? silencer_(radiated)
+                                                         : radiated);
         if (++decimation_count_ >= oversample) {
             samples_.push_back(decimator_ / oversample);
             decimator_ = 0.0;
@@ -504,6 +563,7 @@ private:
     std::array<OnePole, 4> source_{};
     std::array<double, 4> valve_pressure_{};
     OnePole mouth_, radiation_;
+    Cascade antialias_, silencer_;
     double decimator_ = 0.0;
     int    decimation_count_ = 0;
     double mass_ = 0.0;

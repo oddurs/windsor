@@ -21,18 +21,30 @@
 
 namespace wav {
 
-// Signed 16-bit PCM, one channel. Samples arrive in whatever arbitrary units
-// the physics produced them in and are normalised to just under full scale,
-// because the absolute sound pressure three feet behind a tailpipe is not a
-// number this project has any business claiming to know.
-inline bool write(const char* path, std::span<const double> samples, int sample_rate) {
+// Signed 16-bit PCM, one or two channels.
+//
+// Both channels are normalised by the SAME factor. Scaling them independently
+// would make each one as loud as it could be and destroy the only thing a
+// second channel is for: the difference between them.
+inline bool write(const char* path,
+                  std::span<const double> left,
+                  std::span<const double> right,
+                  int sample_rate)
+{
+    const bool stereo   = !right.empty();
+    const int  channels = stereo ? 2 : 1;
+    const std::size_t frames = stereo ? std::min(left.size(), right.size()) : left.size();
+
     double peak = 0.0;
-    for (double s : samples) peak = std::max(peak, std::abs(s));
+    for (double s : left)  peak = std::max(peak, std::abs(s));
+    for (double s : right) peak = std::max(peak, std::abs(s));
     if (peak <= 0.0) peak = 1.0;
     const double gain = 0.89 * 32767.0 / peak;
 
-    const std::uint32_t data_bytes = static_cast<std::uint32_t>(samples.size() * 2);
-    const std::uint32_t byte_rate  = static_cast<std::uint32_t>(sample_rate) * 2;
+    const std::uint32_t data_bytes =
+        static_cast<std::uint32_t>(frames * std::size_t(channels) * 2);
+    const std::uint32_t byte_rate =
+        static_cast<std::uint32_t>(sample_rate) * std::uint32_t(channels) * 2;
 
     std::FILE* f = std::fopen(path, "wb");
     if (!f) return false;
@@ -44,22 +56,31 @@ inline bool write(const char* path, std::span<const double> samples, int sample_
     tag("RIFF");  u32(36 + data_bytes);  tag("WAVE");
     tag("fmt ");  u32(16);
     u16(1);                                   // PCM, uncompressed
-    u16(1);                                   // mono
+    u16(static_cast<std::uint16_t>(channels));
     u32(static_cast<std::uint32_t>(sample_rate));
     u32(byte_rate);
-    u16(2);                                   // block align
-    u16(16);                                  // bits per sample
+    u16(static_cast<std::uint16_t>(channels * 2));   // block align
+    u16(16);                                         // bits per sample
     tag("data");  u32(data_bytes);
 
+    const auto quantise = [&](double v) {
+        return static_cast<std::int16_t>(std::clamp(v * gain, -32768.0, 32767.0));
+    };
+
     std::vector<std::int16_t> pcm;
-    pcm.reserve(samples.size());
-    for (double s : samples)
-        pcm.push_back(static_cast<std::int16_t>(
-            std::clamp(s * gain, -32768.0, 32767.0)));
+    pcm.reserve(frames * std::size_t(channels));
+    for (std::size_t i = 0; i < frames; ++i) {
+        pcm.push_back(quantise(left[i]));
+        if (stereo) pcm.push_back(quantise(right[i]));
+    }
 
     std::fwrite(pcm.data(), 2, pcm.size(), f);
     std::fclose(f);
     return true;
+}
+
+inline bool write(const char* path, std::span<const double> mono, int sample_rate) {
+    return write(path, mono, {}, sample_rate);
 }
 
 } // namespace wav

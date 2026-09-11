@@ -133,7 +133,13 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
         Induction::Setup{
             2.0_L,                 // under a cast-iron 2V intake
             0.056_m,               // both barrels of an Autolite 2100, as one
-            25.0e-6,               // idle bypass: the curb idle screw
+            18.0e-6,               // idle bypass: the curb idle screw, set to
+                                   // idle the engine at about 690 rpm. It is
+                                   // the one figure here that has to be reset
+                                   // whenever anything upstream of it changes,
+                                   // exactly as on a real engine: fit a better
+                                   // exhaust and the idle comes up, and the
+                                   // screw comes back out to meet it
             55.0_K,                // what the exhaust crossover adds. petrol
                                    // takes about 24 K of it straight back
             Fuel::gasoline()
@@ -146,6 +152,9 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
             3.0_L,                 // the collector as a plenum
             0.0020,                // m², what the system leaves open
             900.0_K,               // CALIBRATED: pipe gas temperature
+            700.0,                 // muffler: transmission loss above 700 Hz.
+                                   // Set it to zero for open headers, and
+                                   // stand well back
             44100.0                // the microphone
         },
         // Right bank: a straighter shot, and eight percent shorter for it.
@@ -155,6 +164,7 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
             3.0_L,
             0.0020,
             900.0_K,
+            700.0,
             44100.0
         },
 

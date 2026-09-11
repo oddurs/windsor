@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <array>
+#include <engine/balance.hpp>
 #include <engine/crankshaft.hpp>
 #include <engine/cylinder.hpp>
 #include <engine/exhaust.hpp>
@@ -72,6 +73,7 @@ public:
         Exhaust::Setup      exhaust_left;
         Exhaust::Setup      exhaust_right;
         double              reciprocating_mass;
+        double              bore_spacing;       // centre to centre in a bank
         double              wall_temperature;
         const char*         name;
     };
@@ -141,6 +143,12 @@ public:
     const char*       name()          const { return spec_.name; }
 
     double displacement() const { return spec_.geometry.swept_volume() * cylinder_count; }
+
+    // Ask the same eight rods a different question. See `balance.hpp`.
+    Balance balance() const {
+        return Balance{spec_.crankshaft, spec_.geometry,
+                       spec_.reciprocating_mass, spec_.bore_spacing};
+    }
 
     // The two banks, for anyone holding a microphone.
     Exhaust& bank(Bank b) { return banks_[b == Bank::left ? 0 : 1]; }

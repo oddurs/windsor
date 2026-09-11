@@ -5,7 +5,9 @@
 // it is drawn across the middle of this page.
 
 #include "apps.hpp"
+#include <cmath>
 #include <cstdio>
+#include <cstring>
 
 using namespace engine;
 using namespace engine::si;
@@ -20,6 +22,47 @@ const char* ordinal_gap(double rad) {
     static char buf[8];
     std::snprintf(buf, sizeof buf, "%.0f", as::deg(rad));
     return buf;
+}
+
+
+// The oldest way of telling two crankshafts apart: stand at the front of the
+// engine and look down the length of the shaft. The throws either make a cross
+// or they make a line, and that is the entire taxonomy.
+void down_the_nose(const Crankshaft& ck) {
+    constexpr int rows = 7, cols = 27;
+    char canvas[rows][cols + 1];
+    for (int r = 0; r < rows; ++r) {
+        std::memset(canvas[r], ' ', cols);
+        canvas[r][cols] = '\0';
+    }
+
+    const double reference = ck.throws()[0];
+    for (double psi : ck.throws()) {
+        const double angle = psi - reference;
+        // Stepped in whole units, because a float loop that ends on its own
+        // last value is a loop that does not reach it. Characters are about
+        // twice as tall as they are wide, so the horizontal step is doubled
+        // to keep a circle circular.
+        constexpr int tip = 9;
+        for (int step = 2; step <= tip; ++step) {
+            const double radius = step / 3.0;
+            const int x = 13 + static_cast<int>(std::lround(radius * 2.0 * std::sin(angle)));
+            const int y = 3  - static_cast<int>(std::lround(radius * std::cos(angle)));
+            if (x >= 0 && x < cols && y >= 0 && y < rows)
+                canvas[y][x] = (step == tip) ? 'O' : '.';
+        }
+    }
+    canvas[3][13] = '+';
+
+    std::printf("      looking down the nose of the crank\n\n");
+    for (int r = 0; r < rows; ++r) std::printf("      \033[1m%s\033[0m\n", canvas[r]);
+}
+
+const char* shape_of(const Harmonic& h) {
+    if (h.peak_force < 1.0 && h.peak_couple < 1.0) return "nothing";
+    if (h.eccentricity < 0.25) return "a circle  (a counterweight can oppose it)";
+    if (h.eccentricity > 0.90) return "a line    (nothing can)";
+    return "an ellipse";
 }
 
 } // namespace
@@ -95,6 +138,41 @@ int app::spec(int argc, char** argv) {
         std::printf("  quarters of a turn, and coughs again. The two banks are out of step\n");
         std::printf("  with each other and the interference between them never resolves.\n");
         std::printf("  This is the burble.\n");
+    }
+
+    // ── And what it cost ──────────────────────────────────────────────────
+    rule("WHAT IT COST TO GET THAT");
+    std::printf("  A piston does not travel sinusoidally. Kill the once-per-turn term with\n");
+    std::printf("  a counterweight and a twice-per-turn one is still there, and nothing\n");
+    std::printf("  bolted to a shaft turning at w can cancel a force at 2w.\n\n");
+
+    down_the_nose(ck);
+
+    const Balance balance = e.balance();
+    const double  at      = 3000.0_rpm;
+    const Harmonic first  = balance.primary(at);
+    const Harmonic second = balance.secondary(at);
+
+    std::printf("\n  shaking, at 3000 rpm, from 0.78 kg of reciprocating mass per bore:\n\n");
+    std::printf("               force        couple        traces\n");
+    std::printf("  primary   %7.0f N    %7.0f Nm     %s\n",
+                first.peak_force, first.peak_couple, shape_of(first));
+    std::printf("  secondary %7.0f N    %7.0f Nm     %s\n",
+                second.peak_force, second.peak_couple, shape_of(second));
+
+    std::printf("\n");
+    if (second.peak_force < 1.0) {
+        std::printf("  \033[1mNOTHING LEFT OVER.\033[0m The secondaries cancel each other exactly, and\n");
+        std::printf("  the primary couple traces a circle, which is a rotating imbalance, which\n");
+        std::printf("  a counterweight can be drawn to oppose. The engine holds still. It will\n");
+        std::printf("  idle at 600 rpm on soft mounts without walking across the bay.\n\n");
+        std::printf("  \033[2mThis, and not the noise, is why Detroit forged crosses.\033[0m\n");
+    } else {
+        std::printf("  \033[1m%.0f NEWTONS, TWICE PER REVOLUTION\033[0m, along one line, and no\n", second.peak_force);
+        std::printf("  counterweight can touch it — a shaft turning once per revolution cannot\n");
+        std::printf("  oppose a force that goes twice. It has to be carried by the mounts, the\n");
+        std::printf("  subframe, and the driver.\n\n");
+        std::printf("  \033[2mThis is the bill for the noise, and it is why almost nobody pays it.\033[0m\n");
     }
 
     std::printf("\n\033[2m  The engine fires evenly either way. Nothing at the flywheel can tell\n");

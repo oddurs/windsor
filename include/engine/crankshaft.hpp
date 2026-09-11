@@ -152,6 +152,11 @@ public:
     // ── The forging, as specified ─────────────────────────────────────────
     double vee_angle()   const { return vee_;     }
     double inertia()     const { return inertia_; }
+
+    // The four pin angles as forged, in the order they sit along the shaft
+    // from the nose. Absolute values are arbitrary; only the spread matters,
+    // and the spread is the whole engine.
+    const std::array<double, journal_count>& throws() const { return throws_; }
     Bank   bank_of(int cylinder)    const { return rods_[cylinder - 1].bank;    }
     int    journal_of(int cylinder) const { return rods_[cylinder - 1].journal; }
 

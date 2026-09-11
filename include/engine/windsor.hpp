@@ -158,6 +158,9 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
 
         0.780,                     // kg reciprocating: piston, pin, rings,
                                    // and the small end's share of the rod
+        4.380_in,                  // bore spacing, which is the one dimension
+                                   // a Ford small block never changed — 221 to
+                                   // 351W, everything else grew around it
         400.0_K,                   // CALIBRATED: mean wall temperature
         name
     };

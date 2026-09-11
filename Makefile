@@ -4,7 +4,7 @@
 # make. This should still work in fifteen years.
 
 CXX      ?= c++
-CXXFLAGS ?= -std=c++23 -O2 -Wall -Wextra -Iinclude
+CXXFLAGS ?= -std=c++23 -O2 -Wall -Wextra -Wpedantic -Wshadow -Wold-style-cast -Wdouble-promotion -Iinclude
 SOURCES  := $(wildcard apps/*.cpp)
 HEADERS  := $(wildcard include/engine/*.hpp) $(wildcard apps/*.hpp)
 

@@ -114,7 +114,7 @@ public:
     double temperature()       const { return charge_.temperature; }
     double volume()            const { return volume_now_; }
     double burned_fraction()   const { return charge_.burned; }
-    double trapped_air()       const { return inducted_mass_; }
+    double trapped_air()       const { return trapped_mass_; }
 
     // Work delivered to the piston over the last completed cycle, by integrating
     // p·dV. This is the indicated work, before a single bearing has taken its
@@ -164,12 +164,28 @@ public:
         // The carburettor meters against air that actually came down the port,
         // not against whatever is in the cylinder — most of which, at overlap,
         // is last cycle's exhaust.
-        if (lift_in > 0.0 && mdot_in > 0.0) inducted_mass_ += mdot_in * dt;
+        //
+        // NET flow, signed. It is tempting to count only what comes in, and it
+        // is wrong: at low speed the piston starts back up the bore long before
+        // the inlet valve closes and shoves a measurable fraction of the charge
+        // back out into the runner. That is reversion, it is the reason a big
+        // cam idles badly and the reason volumetric efficiency falls off at the
+        // bottom of the rev range as well as the top, and an accumulator that
+        // ignores the negative flows will report an engine filling its
+        // cylinders essentially perfectly at 1000 rpm, which no engine does.
+        if (lift_in > 0.0) inducted_mass_ += mdot_in * dt;
         if (opened_intake(theta, dtheta)) { inducted_mass_ = 0.0; ignited_ = false; charge_.burned = 0.0; }
 
         // ── Inlet valve closing: the cylinder is sealed and countable ─────
+        // The one instant per cycle at which the question "how much air is in
+        // there?" has an answer. Before it the valve is open and the number is
+        // still moving; after it the charge is trapped and the rest of the
+        // cycle is arithmetic. So the figure is latched here, and `trapped_air`
+        // reports the latched one — not the live accumulator, which if sampled
+        // mid-induction will report anything at all.
         if (closed_intake(theta, dtheta)) {
-            fuel_mass_ = s_.fuel.mass_for(inducted_mass_, equivalence_ratio);
+            trapped_mass_ = inducted_mass_;
+            fuel_mass_ = s_.fuel.mass_for(trapped_mass_, equivalence_ratio);
             reference_ = { p, T, V };     // Woschni's anchor, and the motoring datum
         }
 
@@ -300,6 +316,7 @@ private:
 
     double volume_now_       = 0.0;
     double inducted_mass_    = 0.0;
+    double trapped_mass_     = 0.0;
     double fuel_mass_        = 0.0;
     double since_spark_      = 0.0;
     bool   ignited_          = false;

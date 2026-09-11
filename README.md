@@ -131,6 +131,22 @@ percent has names, and they are listed below.
 after top dead centre, 50% mass burned at 8° ATDC, 2945 K. Which is what a
 pressure trace off a 1968 wedge chamber looks like.
 
+**The pumping loss, drawn.** `./windsor card` puts Watt's indicator diagram on
+the terminal — the same cylinder at the same speed, wide open and throttled,
+to the same scale. Throttled, the intake stroke sinks to 0.2 bar while the
+exhaust stroke sits at 1.5, and the anticlockwise loop that opens between them
+is work the engine spends on breathing:
+
+| at 2000 rpm | gross | pumping | net |
+|---|---|---|---|
+| wide open | 12.40 bar | −0.22 bar | 12.19 bar |
+| throttled | 1.17 bar | **−1.08 bar** | 0.10 bar |
+
+Ninety-two percent of everything it makes, spent on suffocating itself. That
+is the price of controlling a petrol engine with a plate across its throat,
+and it is most of why a diesel is more efficient at part load and barely more
+efficient at full.
+
 **The fuel, which is what stops the engine.** The Livengood–Wu integral over
 Douaud–Eyzat ignition delay: the end gas spends a fraction `dt/τ` of its
 patience each instant, and detonates when the account reaches 1. It reports an
@@ -201,6 +217,7 @@ apps/
   spec.cpp         the shop manual page
   dyno.cpp         a water brake on the flywheel
   run.cpp          a gauge cluster, wired to the sensors
+  card.cpp         let it draw its own picture, as Watt did
   record.cpp       three feet behind the tailpipe
   verify.cpp       the inspection sheet
 ```
@@ -271,6 +288,7 @@ make
 ./windsor spec       what was built, and what falls out of it
 ./windsor dyno       put it on a water brake and sweep it
 ./windsor run        watch it idle  (SPACE for throttle, Q to stop)
+./windsor card       let it draw its own indicator diagram
 ./windsor record     stand behind it with a microphone
 ./windsor verify     check every number this project quotes
 ```

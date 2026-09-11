@@ -24,6 +24,7 @@ static int usage() {
     windsor dyno        put it on a water brake and sweep it
     windsor run         watch it idle
     windsor record      stand behind it with a microphone
+    windsor card        let it draw its own picture, as Watt did
     windsor verify      check every number this project quotes
 
 Options
@@ -44,6 +45,7 @@ int main(int argc, char** argv) {
     if (std::strcmp(verb, "run")    == 0) return app::run   (argc, argv);
     if (std::strcmp(verb, "record") == 0) return app::record(argc, argv);
     if (std::strcmp(verb, "verify") == 0) return app::verify(argc, argv);
+    if (std::strcmp(verb, "card")   == 0) return app::card  (argc, argv);
 
     return usage();
 }

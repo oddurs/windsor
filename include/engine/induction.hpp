@@ -38,12 +38,46 @@
 // vacuum, and because the plenum has real volume it has real lag, which is
 // why an engine takes a moment to answer the throttle.
 //
-// Not modelled: runner tuning. Each intake runner is an organ pipe, and at the
-// speed where its quarter-wave resonance lands on inlet valve closing it packs
-// the cylinder above atmospheric pressure with no supercharger involved. This
-// is worth 10% of peak torque in a narrow band and is the reason a tunnel-ram
-// is tall. The plenum here is a single well-stirred volume and knows nothing
-// of it.
+// ── Not modelled: the runners ─────────────────────────────────────────────
+//
+// The plenum here is one well-stirred volume, and every cylinder drinks from
+// it directly. In the engine there is a foot of cast iron between the two, and
+// the column of air standing in it has mass and a resonance of its own. Slow
+// the flow down near the end of the intake stroke and that column keeps coming
+// anyway, packing charge in after the piston has stopped helping — which is
+// why the inlet valve is left open 70° past bottom dead centre, and why a
+// tunnel ram is tall.
+//
+// It was built twice and neither version shipped, which is worth writing down
+// properly because the measurements are the useful part.
+//
+// AS A WAVEGUIDE — two delay lines per runner, an inverting reflection at the
+// plenum where the area opens out, the same machinery the exhaust primaries
+// use. It worked, and it tuned in the right direction: longer runners helped
+// 2500 to 4500 rpm and hurt 5500, exactly the trade a manifold makes. It moved
+// peak torque to 306 lb-ft at 2486 rpm against Ford's 295 at 2400, which is
+// the closest this model has ever come. And it could not be held below 2000
+// rpm at any damping: the loop rang and the torque swung between 137 and 465
+// Nm in a limit cycle seventeen cycles long.
+//
+// AS AN INERTANCE — dropping the resonance and keeping only the mass, which
+// for a runner this short is the larger effect anyway. Written as
+// p = p_plenum − Λ·dṁ/dt it is an algebraic loop, since the ṁ being
+// differentiated is the flow the cylinder computes FROM the pressure being
+// solved for, and it produced NaN in under a second. Written properly — the
+// runner flow as a state pushed by the pressure difference, a small port
+// volume as a compliance, which together are a Helmholtz resonator and are
+// what a runner actually is — it integrated stably at 1500 and 4000 rpm with
+// no cycle-to-cycle variation at all. But it moved peak torque DOWN to 1484
+// rpm, away from the 2400 it was meant to be chasing.
+//
+// So: one version that was accurate and unstable, one that was stable and less
+// accurate than having no runners at all, and four times the runtime for
+// either. Neither is worth what it costs yet. What is missing in both is that
+// the eight runners should meet each other AT the plenum and share it —
+// a proper junction, as the exhaust primaries have at their collector — rather
+// than each seeing a private boundary condition. That is probably the whole
+// difference, and it is the next thing to try.
 
 #pragma once
 

@@ -39,6 +39,7 @@ struct Point { double rpm, torque, power, vacuum, advance, peak, knock, spread; 
 // so the load is always a cycle behind the speed and the pair of them circle
 // each other in a small limit cycle forever. Demanding they stop entirely
 // costs half a minute and buys a tenth of a newton-metre.
+constexpr double over_speed      = 6600.0;  // rpm, the cell's own limiter
 constexpr double on_the_nose     = 25.0;   // rpm, and he does not care about these
 constexpr double still_enough    = 0.004;  // the beam has stopped drifting
 constexpr std::size_t watched_cycles = 8;  // how long he watches before believing it
@@ -72,6 +73,13 @@ Point measure(Engine& e, double target_rpm) {
     const auto hold = [&] {
         const double error = e.rpm() - target_rpm;
         e.brake_torque(std::clamp(e.torque() + error * 0.6, -150.0, 1200.0));
+
+        // Every dyno cell ever built has one of these, and this one did not
+        // until an experiment with intake runners sent an engine to thirty-six
+        // thousand rpm on the first point of a sweep. Coming up to the lowest
+        // speed the throttle is wide open and the brake has not been wound on
+        // yet, and an unloaded V8 gets to the moon in about two seconds.
+        e.throttle(e.rpm() > over_speed ? 0.0 : 1.0);
         e.step(step);
     };
 

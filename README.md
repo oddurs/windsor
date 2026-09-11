@@ -288,9 +288,14 @@ is a design decision. Each of these is named in the file where it bites.
 
 - **Wrist-pin offset.** Real pistons carry 0.5–1.5 mm toward the thrust side.
   It buys a rattle you cannot hear and costs a closed-form solution.
-- **Intake runner tuning.** Each runner is an organ pipe worth ~10% of peak
-  torque in a narrow band. The plenum here is one well-stirred volume.
-  This is most of the missing ten percent.
+- **Intake runner tuning** — built twice, shipped neither, and the measurements
+  are in `induction.hpp`. As a waveguide it tuned correctly and put peak torque
+  at 306 lb-ft / 2486 rpm against Ford's 295 / 2400 — the closest this model
+  has come — and could not be held below 2000 rpm at any damping. As an
+  inertance plus port compliance it was perfectly stable and moved the torque
+  peak the *wrong way*. Both cost 4× the runtime. What neither did was let the
+  eight runners meet each other at the plenum the way the exhaust primaries
+  meet at their collector, and that is probably the whole difference.
 - **Nonlinear gas dynamics** — and this one was built, measured, and reverted,
   which is the most interesting entry on the list. `riemann.hpp` is a
   second-order finite-volume Euler solver, verified against Sod's shock tube to

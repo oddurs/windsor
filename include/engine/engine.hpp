@@ -61,7 +61,16 @@ public:
         Distributor         distributor;
         Friction            friction;
         Induction::Setup    induction;
-        Exhaust::Setup      exhaust;
+
+        // Two systems, not one. A dual exhaust is never symmetric: the left
+        // side has to get around the starter and the bellhousing and the right
+        // side does not, and the two pipes reach the back of the car having
+        // travelled measurably different distances. Nobody builds them equal
+        // because nobody can, and it turns out to matter — see the note in
+        // `record.cpp` about what happens when you add two identical banks
+        // together.
+        Exhaust::Setup      exhaust_left;
+        Exhaust::Setup      exhaust_right;
         double              reciprocating_mass;
         double              wall_temperature;
         const char*         name;
@@ -70,7 +79,7 @@ public:
     explicit Engine(Specification spec)
         : spec_{spec}
         , induction_{spec.induction}
-        , banks_{Exhaust{spec.exhaust}, Exhaust{spec.exhaust}}
+        , banks_{Exhaust{spec.exhaust_left}, Exhaust{spec.exhaust_right}}
         , omega_{600.0 * si::two_pi / 60.0}
     {
         for (int c = 1; c <= cylinder_count; ++c) {
@@ -100,6 +109,16 @@ public:
     // holds still, and then weighs the arm. Set this to zero and the engine
     // free-revs, which is the other thing a dyno is for.
     void brake_torque(double nm) { brake_ = nm; }
+
+    // Everything bolted downstream of the flywheel, reflected back through
+    // whatever gear it is in. In neutral this is nothing and a V8 will snap to
+    // the rev limiter in a quarter of a second, which is exactly what a blip
+    // sounds like. In third gear it is the entire car — a ton and a half of
+    // steel, seen through the square of the gear ratio — and the same engine
+    // takes three seconds to do the same thing. The engine cannot tell the
+    // difference and does not need to; it is one number added to the crank's
+    // own polar moment.
+    void load_inertia(double kg_m2) { load_inertia_ = std::max(kg_m2, 0.0); }
 
     // ── Observation ───────────────────────────────────────────────────────
     double crank_angle() const { return theta_; }
@@ -133,9 +152,6 @@ public:
         advance_ = spec_.distributor.advance(omega_, induction_.vacuum());
 
         const Boundary intake = induction_.boundary();
-        const std::array<Boundary, 2> exhaust_side{
-            banks_[0].boundary(), banks_[1].boundary()
-        };
 
         double gas_torque = 0.0;
         double port_flow  = 0.0;
@@ -144,8 +160,10 @@ public:
         for (int c = 1; c <= cylinder_count; ++c) {
             const auto [side, seat] = seat_[c - 1];
 
+            // Not the collector — this cylinder's own pipe, with whatever
+            // wave is standing in it at this instant. See `exhaust.hpp`.
             const Indication ind = cylinders_[c - 1].step(
-                theta_, dtheta, omega_, intake, exhaust_side[side],
+                theta_, dtheta, omega_, intake, banks_[side].port_boundary(seat),
                 advance_, phi_);
 
             gas_torque += ind.torque;
@@ -170,7 +188,8 @@ public:
 
         // ── The chase ─────────────────────────────────────────────────────
         const double net = gas_torque - friction_torque - brake_;
-        omega_ = std::max(omega_ + net / spec_.crankshaft.inertia() * dt, 1.0);
+        const double rotating_inertia = spec_.crankshaft.inertia() + load_inertia_;
+        omega_ = std::max(omega_ + net / rotating_inertia * dt, 1.0);
 
         accumulate(gas_torque, friction_torque, dtheta, peak);
 
@@ -203,6 +222,7 @@ private:
     double throttle_ = 0.0;
     double phi_      = 1.0;
     double brake_    = 0.0;
+    double load_inertia_ = 0.0;
     double advance_  = 0.0;
 
     double cycle_work_ = 0.0, cycle_angle_ = 0.0, cycle_peak_ = 0.0;

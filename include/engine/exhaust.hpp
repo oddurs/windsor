@@ -60,19 +60,48 @@
 // almost perfectly inverted, which is why an exhaust pipe has a resonant note
 // of its own — an organ pipe, stopped at one end by a cylinder head.
 //
-// ── The one-way street ────────────────────────────────────────────────────
+// ── The loop, closed ──────────────────────────────────────────────────────
 //
-// A real admission. The waveguide LISTENS to the exhaust ports; it does not
-// push back on them. The cylinders see the collector plenum's slowly-varying
-// backpressure, not the sharp returning waves the waveguide computes. So this
-// model will reproduce the sound of scavenging faithfully and will not credit
-// the engine with the power that scavenging makes, which means header length
-// changes the note here and does not change the torque curve.
+// The waveguide does not merely listen to the exhaust ports. It is what they
+// push against.
 //
-// Closing that loop means running the gas dynamics and the cylinder solution
-// together at the waveguide's timestep, and it is the single largest honest
-// improvement available to this project. It is not done, and this comment is
-// the place where that is admitted rather than quietly glossed.
+// Each cylinder's exhaust `Boundary` is the pressure at the closed end of its
+// own primary pipe — the slowly-varying mean backpressure of the collector,
+// plus whatever wave happens to be standing at that valve at that instant. So
+// a cylinder blowing down sends a wave away down its pipe, the junction sends
+// part of it back inverted, and when it arrives the cylinder that is by then
+// on its overlap feels it, and breathes better or worse for it.
+//
+// This costs more than it looks. The cylinder solution and the gas dynamics
+// now have to be integrated together, the waveguide has to run fast enough
+// that the crank cannot step over it at 6000 rpm, and a mass flow has to be
+// converted into a travelling wave with the right magnitude rather than an
+// arbitrary one:
+//
+//      p⁺ = ρ·c·u,        u = ṁ / ρA
+//
+// with one limit that has to be respected or the whole thing detonates. A
+// plane wave cannot carry particle velocity faster than sound — past Mach 1
+// what is leaving the valve is a jet, not a wave, and its surplus momentum is
+// spent stirring the pipe rather than travelling down it. A linear waveguide
+// has no way to become a shock, so left unbounded it will happily report
+// thirty-five bar in a header that has never seen three, the cylinder will
+// find it cannot exhale against its own exhaust, and the engine will make
+// negative power with complete confidence. It did exactly that, once.
+//
+// So u is clamped at the local speed of sound, which caps the source at
+//
+//      p⁺max = ρc² = γ·p̄
+//
+// — about 1.8 bar over a mean of 1.3, which is what a primary pipe actually
+// sees at blowdown. The clamp is the honest boundary of a linear model, not a
+// tuning constant, and the real fix is a nonlinear method-of-characteristics
+// solver, which is what proper engine gas-dynamics codes are.
+//
+// What it buys is that header length now changes the torque curve and not
+// only the note, that the pulses leaving one bank are no longer all identical,
+// and that the difference between the two crankshafts survives being summed
+// with the other bank. It did not, before.
 
 #pragma once
 
@@ -121,11 +150,21 @@ public:
         double sample_rate;        // Hz
     };
 
-    explicit Exhaust(Setup s) : s_{s} {
+    // The waveguide runs faster than the file it writes. Three reasons, all
+    // of them the same reason: at 6000 rpm a quarter-degree of crank is under
+    // seven microseconds and the crank must not be able to step over a sound
+    // sample; a delay line rounded to the nearest whole sample is a pipe cut
+    // to the nearest whole sample, and at 44.1 kHz that is nearly a centimetre
+    // of header; and a closed feedback loop wants headroom above the
+    // frequencies it cares about. Output is decimated back down.
+    static constexpr int oversample = 4;
+
+    explicit Exhaust(Setup s) : s_{s}, rate_{s.sample_rate * oversample} {
         const double c = air::speed_of_sound(s_.gas_temperature);
+        sound_speed_ = c;
 
         const auto samples = [&](double length) {
-            return static_cast<std::size_t>(std::round(length / c * s_.sample_rate));
+            return static_cast<std::size_t>(std::round(length / c * rate_));
         };
 
         for (int i = 0; i < 4; ++i) {
@@ -139,6 +178,7 @@ public:
         const double Ac = si::pi * 0.25 * s_.collector_diameter * s_.collector_diameter;
         admittance_primary_   = Ap;    // ρc is common to every port and cancels
         admittance_collector_ = Ac;
+        primary_area_         = Ap;
 
         mass_ = air::mass(si::p_atmosphere, s_.gas_temperature, s_.plenum_volume);
     }
@@ -165,6 +205,15 @@ public:
         port_flow_[seat] = mass_flow;
     }
 
+    // What the exhaust valve of the cylinder on this seat is actually pushing
+    // against: the collector's mean backpressure, plus the wave standing in
+    // the pipe. This is the number that makes a header a tuned part rather
+    // than a drain.
+    Boundary port_boundary(int seat) const {
+        const double mean = air::pressure(mass_, s_.gas_temperature, s_.plenum_volume);
+        return { std::max(mean + valve_pressure_[seat], 2.0e4), s_.gas_temperature };
+    }
+
     // Advance the whole system by dt seconds of real time.
     void advance(double dt) {
         double total = 0.0;
@@ -174,6 +223,8 @@ public:
         // the system leaves open. A straight pipe and a glasspack breathe;
         // a restrictive muffler is how a manufacturer buys quiet with power.
         const double p = air::pressure(mass_, s_.gas_temperature, s_.plenum_volume);
+        mean_pressure_ = p;
+        mean_density_  = p / (air::R * s_.gas_temperature);
         const double out = port::mass_flow(s_.outlet_area,
                                            p, s_.gas_temperature,
                                            si::p_atmosphere, si::T_standard);
@@ -181,7 +232,7 @@ public:
 
         // Acoustic: run whole audio samples, carrying the remainder forward so
         // the sound clock never drifts against the crank.
-        audio_debt_ += dt * s_.sample_rate;
+        audio_debt_ += dt * rate_;
         while (audio_debt_ >= 1.0) {
             tick();
             audio_debt_ -= 1.0;
@@ -223,7 +274,24 @@ private:
         // does not push back — see the admission at the top of the file.
         for (int i = 0; i < 4; ++i) {
             const double returning = primary_back_[i].read();
-            primary_out_[i].write(returning * closed_end_reflection + port_flow_[i]);
+
+            // A mass flow leaving the valve becomes a travelling wave, up to
+            // the point where it stops being one. See the note on the clamp.
+            const double velocity = std::clamp(
+                port_flow_[i] / (mean_density_ * primary_area_),
+                -sound_speed_, sound_speed_);
+            const double injected = mean_density_ * sound_speed_ * velocity;
+
+            // While the valve is open the end of the pipe is not closed — it
+            // is coupled to half a litre of cylinder, and a wave arriving
+            // there is partly swallowed instead of bounced. Only once the
+            // valve is on its seat is this a closed end.
+            const double reflection = (port_flow_[i] != 0.0)
+                                    ? open_valve_reflection : closed_end_reflection;
+            const double outgoing = returning * reflection + injected;
+
+            primary_out_[i].write(outgoing);
+            valve_pressure_[i] = outgoing + returning;   // what the valve feels
         }
 
         // ── The open end of the tailpipe ──────────────────────────────────
@@ -238,8 +306,19 @@ private:
         // all. So the microphone is a differentiator, and that is why an
         // exhaust note is all edge.
         const double leaving  = (1.0 + open_end_reflection) * at_mouth;
-        samples_.push_back(leaving - previous_mouth_);
+        const double radiated = leaving - previous_mouth_;
         previous_mouth_ = leaving;
+
+        // Decimate back to the file's rate. A boxcar average over the
+        // oversampled run is a crude anti-alias filter and an honest one: it
+        // is exactly what a microphone diaphragm too heavy to follow the top
+        // octave would do.
+        decimator_ += radiated;
+        if (++decimation_count_ >= oversample) {
+            samples_.push_back(decimator_ / oversample);
+            decimator_ = 0.0;
+            decimation_count_ = 0;
+        }
 
         for (auto& d : primary_out_)  d.advance();
         for (auto& d : primary_back_) d.advance();
@@ -257,14 +336,21 @@ private:
     }
 
     static constexpr double closed_end_reflection = 0.96;
+    static constexpr double open_valve_reflection = 0.45;
     static constexpr double open_end_reflection   = 0.72;
 
     Setup s_;
     std::vector<DelayLine> primary_out_, primary_back_;
     std::unique_ptr<DelayLine> collector_out_, collector_back_;
 
+    double rate_ = 0.0, sound_speed_ = 0.0, primary_area_ = 1.0;
+    double mean_pressure_ = si::p_atmosphere;
+    double mean_density_  = 1.0;
     double admittance_primary_ = 0.0, admittance_collector_ = 0.0;
     std::array<double, 4> port_flow_{};
+    std::array<double, 4> valve_pressure_{};
+    double decimator_ = 0.0;
+    int    decimation_count_ = 0;
     double mass_ = 0.0;
     double audio_debt_ = 0.0;
     double lowpass_state_ = 0.0, previous_mouth_ = 0.0;

@@ -137,13 +137,23 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
             320.0_K                // charge temperature after the hot intake
         },
 
+        // Left bank: the long way round, over the bellhousing.
         Exhaust::Setup{
             0.80_m,   1.625_in,    // primaries — a mid-length header
-            1.50_m,   2.500_in,    // collector back to the open end
+            1.62_m,   2.500_in,    // collector back to the open end
             3.0_L,                 // the collector as a plenum
             0.0020,                // m², what the system leaves open
             900.0_K,               // CALIBRATED: pipe gas temperature
             44100.0                // the microphone
+        },
+        // Right bank: a straighter shot, and eight percent shorter for it.
+        Exhaust::Setup{
+            0.80_m,   1.625_in,
+            1.50_m,   2.500_in,
+            3.0_L,
+            0.0020,
+            900.0_K,
+            44100.0
         },
 
         0.780,                     // kg reciprocating: piston, pin, rings,

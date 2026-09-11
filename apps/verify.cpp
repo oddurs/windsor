@@ -89,11 +89,21 @@ public:
     }
 
 private:
+    // The precisions are not decoration. `%-44.44s` pads a short field AND
+    // truncates a long one, so a label nobody counted the characters of can
+    // never shove the columns to the right and leave the sheet looking like it
+    // was set by someone who did not care. Three of them had.
     void mark(const char* what, bool ok, const std::string& got, const std::string& want) {
         ok ? ++passed_ : ++failed_;
-        std::printf("  %-44s %-16s %-16s %s\n", what, got.c_str(), want.c_str(),
+        std::printf("  %-*.*s %-*.*s %-*.*s %s\n",
+                    label_width, label_width, what,
+                    value_width, value_width, got.c_str(),
+                    value_width, value_width, want.c_str(),
                     ok ? "\033[32mok\033[0m" : "\033[1;31mFAILED\033[0m");
     }
+
+    static constexpr int label_width = 43;
+    static constexpr int value_width = 15;
 
     static std::string format(double v, const char* prefix) {
         char buf[48];
@@ -246,7 +256,7 @@ int app::verify(int, char**) {
 
     std::printf("\n\033[1mwindsor — inspection\033[0m\n");
     std::printf("\033[2m  every number this project quotes, checked against something outside it\033[0m\n");
-    std::printf("\n  %-44s %-16s %-16s\n", "", "measured", "expected");
+    std::printf("\n  %-43s %-15s %-15s\n", "", "measured", "expected");
 
     // ── The linkage ───────────────────────────────────────────────────────
     sheet.section("THE LINKAGE");
@@ -454,7 +464,7 @@ int app::verify(int, char**) {
         const double squeezed = hold_at(Engine{altered(11.5, 94.0, 0.0)},     2500.0, 1.05).knock;
 
         sheet.note("knock is an index and not a verdict; these are all comparisons");
-        sheet.holds("it is worse at low rpm, where there is more time to cook",
+        sheet.holds("worse at low rpm: more time to cook",
                     slow > fast);
         sheet.holds("worse with sixteen more degrees of advance", advanced > stock * 1.3);
         sheet.holds("worse on 87 octane than on 94", cheap > stock);
@@ -491,7 +501,7 @@ int app::verify(int, char**) {
             const double speed = ((double(i) + 0.5) / 400.0 - 0.5) / 0.7e-3;
             if (speed > 60.0 && speed < 300.0) { plateau += tube.at(i).pressure; ++counted; }
         }
-        sheet.matches("shock tube, against the exact Riemann solution",
+        sheet.matches("shock tube, against the exact solution",
                       plateau / counted, exact_star_pressure(left, right), 2e-3);
 
         // Now: does a pressure front actually steepen as it travels?
@@ -543,7 +553,7 @@ int app::verify(int, char**) {
         // pressure front in a pipe could actually have.
         sheet.within("the blowdown front's speed down the pipe",
                      front_speed, 580.0, 2500.0, "m/s");
-        sheet.holds("which is FASTER than sound in the gas ahead of it",
+        sheet.holds("which is FASTER than sound ahead of it",
                     front_speed > sound_speed * 1.05,
                     (std::to_string(int(100.0 * (front_speed / sound_speed - 1.0))) + "% over").c_str());
         sheet.note("sound in 900 K exhaust is 586 m/s, and a linear wave travels at exactly");

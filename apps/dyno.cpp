@@ -174,14 +174,14 @@ int app::dyno(int argc, char** argv) {
 
     std::printf("\n\033[1m%s\033[0m — wide open throttle, water brake, %.1f L\n",
                 e.name(), as::L(e.displacement()));
-    std::printf("\n   rpm    torque      power      BMEP    vacuum   advance   peak p   knock\n");
-    std::printf("         lb-ft   Nm    hp    kW     bar      kPa       deg      bar   index  spread\n");
+    std::printf("\n       torque      power         BMEP vacuum advance peak p  knock  brake\n");
+    std::printf("   rpm  lb-ft   Nm    hp    kW    bar    kPa     deg    bar  index   hold\n");
 
     std::vector<Point> points;
     for (double rpm = 1000.0; rpm <= 6000.5; rpm += 500.0) {
         const Point p = measure(e, rpm);
         points.push_back(p);
-        std::printf("  %4.0f  %6.1f %5.0f %5.1f %5.1f   %5.2f    %5.1f     %5.1f    %5.1f   %5.2f  %5.1f%%\n",
+        std::printf("  %4.0f %6.1f %4.0f %5.1f %5.1f %6.2f %6.1f %7.1f %6.1f %6.2f %5.1f%%\n",
                     p.rpm, as::lbft(p.torque), p.torque, as::hp(p.power), as::kW(p.power),
                     as::bar(p.torque * 2.0 * two_pi / e.displacement()),
                     as::kPa(p.vacuum), as::deg(p.advance), as::bar(p.peak), p.knock, 100.0 * p.spread);

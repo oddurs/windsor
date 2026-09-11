@@ -83,6 +83,7 @@ struct Indication {
     double volume;          // m³
     double heat_release;    // W from combustion
     double wall_loss;       // W into the coolant
+    double exhaust_open;    // 0..1, how far off its seat the exhaust valve is
 };
 
 class Cylinder {
@@ -276,7 +277,8 @@ public:
             gas_torque + inertia_torque,
             mdot_in, mdot_ex,
             p, charge_.temperature, V,
-            burn_power, wall_power
+            burn_power, wall_power,
+            lift_ex / s_.camshaft.exhaust().max_lift()
         };
     }
 

@@ -39,7 +39,8 @@ struct Phase { const char* what; double seconds; double throttle; };
 constexpr Phase script[] = {
     { "settling",  1.5, 0.00 },
     { "idle",      1.8, 0.00 },
-    { "pull",      3.6, 1.00 },
+    { "cruise",    1.6, 0.22 },   // part throttle: the vacuum advance winds in
+    { "pull",      3.4, 1.00 },
     { "overrun",   2.2, 0.00 },
 };
 

@@ -60,8 +60,8 @@ void down_the_nose(const Crankshaft& ck) {
 
 const char* shape_of(const Harmonic& h) {
     if (h.peak_force < 1.0 && h.peak_couple < 1.0) return "nothing";
-    if (h.eccentricity < 0.25) return "a circle  (a counterweight can oppose it)";
-    if (h.eccentricity > 0.90) return "a line    (nothing can)";
+    if (h.eccentricity < 0.25) return "a circle   counterweights take it";
+    if (h.eccentricity > 0.90) return "a line     nothing can touch it";
     return "an ellipse";
 }
 

@@ -125,7 +125,9 @@
 // It cost seven times the runtime. And it destroyed the one measurement this
 // entire project exists to make: the flat-plane bank's half-order share, which
 // ought to be nearly nothing, went from 0.02 to 3.8, and the ratio between the
-// two crankshafts collapsed from 118 to 1. Somewhere in the coupled pipes the
+// two crankshafts collapsed to 1 — from 118 as the model stood that day, and
+// from 26 as it stands now that the radiation is modelled properly, but the
+// number that matters is the 1. Somewhere in the coupled pipes the
 // scheme manufactures cycle-to-cycle variation that an evenly-firing bank does
 // not have, and an engine that cannot tell the two crankshafts apart is of no
 // use here however good its shocks are.
@@ -154,13 +156,42 @@
 
 namespace engine {
 
+// A one-pole lowpass, specified by the frequency it turns over at rather than
+// by a bare coefficient, because a bare coefficient is a number nobody can
+// check and a corner frequency is a claim about the world.
+class OnePole {
+public:
+    void corner(double hertz, double rate) {
+        a_ = 1.0 - std::exp(-si::two_pi * hertz / rate);
+    }
+    double operator()(double x) { y_ += a_ * (x - y_); return y_; }
+private:
+    double a_ = 1.0, y_ = 0.0;
+};
+
 // A travelling wave, stored as the samples it has not yet arrived as.
 class DelayLine {
 public:
     explicit DelayLine(std::size_t samples)
         : buffer_(std::max<std::size_t>(samples, 1), 0.0) {}
 
-    double read()  const { return buffer_[index_]; }
+    // A pipe is not a perfect conductor of sound. Against the wall there is a
+    // boundary layer a fraction of a millimetre thick where the gas is held
+    // still by viscosity and held at the wall's temperature by conduction, and
+    // every pass down the pipe leaves some of the wave in it. The loss grows
+    // as the square root of frequency, so a pipe is a lowpass filter made of
+    // steel — which is why a long system sounds darker than a short one, why a
+    // megaphone is bright and a two-chamber muffler is not, and why standing
+    // behind open headers is unpleasant in a way that standing behind a car is
+    // not.
+    //
+    // Without this the model delivers the sharp edge of every blowdown to the
+    // tailpipe undiminished, the radiation shelf above passes all of it, and
+    // the result is 12 dB of hiss at 1.8 kHz standing over the firing
+    // frequency. It sounded, accurately, like a hairdryer.
+    void absorbs_above(double hertz, double rate) { loss_.corner(hertz, rate); }
+
+    double read() { return loss_(buffer_[index_]); }
     void   write(double v) { pending_ = v; }
     void   advance() {
         buffer_[index_] = pending_;
@@ -172,6 +203,7 @@ private:
     std::vector<double> buffer_;
     std::size_t index_   = 0;
     double      pending_ = 0.0;
+    OnePole     loss_;
 };
 
 // One bank: four primaries into a collector into a tailpipe.
@@ -219,6 +251,27 @@ public:
         primary_area_         = Ap;
 
         mass_ = air::mass(si::p_atmosphere, s_.gas_temperature, s_.plenum_volume);
+
+        // Two corners, both of them claims about the world rather than knobs.
+        // The pipe's own losses, and the frequency above which the mouth stops
+        // getting better at radiating — c/2πa, in ambient air, not in the hot
+        // gas inside the pipe, because the sound has left by then.
+        constexpr double ambient_sound = 343.0;
+
+        // The corner a pipe absorbs above, longer pipe darker. These are the
+        // two numbers in this file that were set by ear rather than derived,
+        // and they are marked as such: the √f boundary-layer law gives the
+        // SHAPE, an exhaust system's real attenuation depends on its bends,
+        // its welds and its silencer, and none of that is modelled.
+        constexpr double absorption_metre_hz = 3200.0;   // CALIBRATED
+        for (auto& d : primary_out_)  d.absorbs_above(absorption_metre_hz / s_.primary_length, rate_);
+        for (auto& d : primary_back_) d.absorbs_above(absorption_metre_hz / s_.primary_length, rate_);
+        collector_out_ ->absorbs_above(absorption_metre_hz / s_.collector_length, rate_);
+        collector_back_->absorbs_above(absorption_metre_hz / s_.collector_length, rate_);
+
+        for (OnePole& f : source_) f.corner(3000.0, rate_);
+        mouth_.corner(2500.0, rate_);
+        radiation_.corner(ambient_sound / (si::two_pi * 0.5 * s_.collector_diameter), rate_);
     }
 
     // ── The thermodynamic half ────────────────────────────────────────────
@@ -239,8 +292,9 @@ public:
     //             engine they are not, quite, and equal-length headers cost
     //             what they cost precisely because making them so is hard.
     // mass_flow — kg/s leaving the cylinder, positive outward.
-    void receive(int seat, double mass_flow) {
+    void receive(int seat, double mass_flow, double valve_open) {
         port_flow_[seat] = mass_flow;
+        port_open_[seat] = valve_open;
     }
 
     // What the exhaust valve of the cylinder on this seat is actually pushing
@@ -270,11 +324,30 @@ public:
 
         // Acoustic: run whole audio samples, carrying the remainder forward so
         // the sound clock never drifts against the crank.
+        //
+        // The port flows are RAMPED across those samples rather than held.
+        // They arrive once per crank step and the waveguide runs several times
+        // faster than that, so holding them makes a staircase — and at idle
+        // that staircase has its steps 17 kHz apart, squarely inside the audio
+        // band and aliasing badly. The gas leaving a valve does not move in
+        // steps; the steps are an artefact of two clocks meeting, and the
+        // interpolation is what removes the artefact rather than the sound.
         audio_debt_ += dt * rate_;
-        while (audio_debt_ >= 1.0) {
+        const int ticks = static_cast<int>(audio_debt_);
+        audio_debt_ -= ticks;
+
+        for (int k = 0; k < ticks; ++k) {
+            const double across = (k + 1.0) / ticks;
+            for (int i = 0; i < 4; ++i) {
+                ramped_[i] = previous_flow_[i]
+                           + across * (port_flow_[i] - previous_flow_[i]);
+                open_[i]   = previous_open_[i]
+                           + across * (port_open_[i] - previous_open_[i]);
+            }
             tick();
-            audio_debt_ -= 1.0;
         }
+        previous_flow_ = port_flow_;
+        previous_open_ = port_open_;
     }
 
     // Samples produced since the last drain, in arbitrary units; the recorder
@@ -316,16 +389,40 @@ private:
             // A mass flow leaving the valve becomes a travelling wave, up to
             // the point where it stops being one. See the note on the clamp.
             const double velocity = std::clamp(
-                port_flow_[i] / (mean_density_ * primary_area_),
+                ramped_[i] / (mean_density_ * primary_area_),
                 -sound_speed_, sound_speed_);
-            const double injected = mean_density_ * sound_speed_ * velocity;
+            // Smoothed, and this is the last artefact of two clocks meeting.
+            //
+            // The port flows arrive once per crank step — 16.7 kHz at idle —
+            // and are ramped between arrivals, which sounds like enough and is
+            // not, because the radiation model downstream DIFFERENTIATES. The
+            // derivative of a piecewise-linear ramp is a staircase, so the
+            // interpolation is undone on the way out and the crank's step rate
+            // is printed straight into the audio band, where it aliased and
+            // put nearly a third of the recording's energy at 16 kHz.
+            //
+            // A real exhaust valve event lasts about ten milliseconds and its
+            // fastest genuine feature, blowdown, takes a millisecond or so.
+            // There is nothing physical in a port flow above about three
+            // kilohertz, so what is above three kilohertz is the solver
+            // talking about itself, and it is removed here.
+            const double injected = source_[i](mean_density_ * sound_speed_ * velocity);
 
             // While the valve is open the end of the pipe is not closed — it
             // is coupled to half a litre of cylinder, and a wave arriving
             // there is partly swallowed instead of bounced. Only once the
             // valve is on its seat is this a closed end.
-            const double reflection = (port_flow_[i] != 0.0)
-                                    ? open_valve_reflection : closed_end_reflection;
+            //
+            // It has to be a continuous function of the lift, and getting that
+            // wrong is audible. The first version of this switched between the
+            // two values the instant any flow appeared — a jump from 0.96 to
+            // 0.45 in one sample, sixteen times a cycle, inside a resonant
+            // delay loop. A step discontinuity in a loop gain is a click, a
+            // click is broadband, and those clicks were putting over half the
+            // recording's energy above 8 kHz. A valve does not snap open; it
+            // has a lift curve, and the pipe's termination follows it.
+            const double reflection = closed_end_reflection
+                + open_[i] * (open_valve_reflection - closed_end_reflection);
             const double outgoing = returning * reflection + injected;
 
             primary_out_[i].write(outgoing);
@@ -337,14 +434,34 @@ private:
         // perfectly — some of it escapes as sound, and that escaping fraction
         // is the entire output of this file.
         const double at_mouth = collector_out_->read();
-        collector_back_->write(-open_end_reflection * lowpass(at_mouth));
+        collector_back_->write(-open_end_reflection * mouth_(at_mouth));
 
+        // ── What actually escapes ─────────────────────────────────────────
+        //
         // An open pipe radiates the RATE OF CHANGE of the volume flow leaving
         // it, not the flow itself — a pipe blowing steadily makes no sound at
-        // all. So the microphone is a differentiator, and that is why an
-        // exhaust note is all edge.
+        // all. So the microphone begins as a differentiator, and that is why
+        // an exhaust note is all edge.
+        //
+        // But only up to a point, and missing the point is what made the first
+        // version of this file sound like a hairdryer. A differentiator rises
+        // at six decibels per octave FOREVER, and an engine whose output has
+        // been differentiated with nothing to stop it puts three quarters of
+        // its energy above 1.4 kHz, where a real V8 at idle has almost none.
+        //
+        // The physics that stops it: a pipe mouth only radiates like a point
+        // source while it is acoustically small compared to the wavelength —
+        // ka ≪ 1. Once the wavelength is down to the size of the pipe, the
+        // mouth is no longer a point, radiation efficiency stops climbing, and
+        // the response goes flat. The corner sits at
+        //
+        //      f = c / 2πa
+        //
+        // which for a two-and-a-half inch tailpipe, in ambient air rather than
+        // in the hot gas inside, is about 1.7 kHz. Above that the pipe is
+        // simply not getting any better at being a loudspeaker.
         const double leaving  = (1.0 + open_end_reflection) * at_mouth;
-        const double radiated = leaving - previous_mouth_;
+        const double radiated = radiation_(leaving - previous_mouth_);
         previous_mouth_ = leaving;
 
         // Decimate back to the file's rate. A boxcar average over the
@@ -364,14 +481,10 @@ private:
         collector_back_->advance();
     }
 
-    // Pipes are not lossless and neither is the air at the mouth. High
-    // frequencies are absorbed on every pass, which is why a long system
-    // sounds darker than a short one and why an open header is so bright it
-    // is unpleasant.
-    double lowpass(double x) {
-        lowpass_state_ += 0.42 * (x - lowpass_state_);
-        return lowpass_state_;
-    }
+    // Pipes are not lossless and neither is the air at the mouth. A viscous
+    // and thermal boundary layer scrubs the high frequencies out on every
+    // pass, which is why a long system sounds darker than a short one and why
+    // an open header is so bright it is unpleasant to stand behind.
 
     static constexpr double closed_end_reflection = 0.96;
     static constexpr double open_valve_reflection = 0.45;
@@ -385,13 +498,17 @@ private:
     double mean_pressure_ = si::p_atmosphere;
     double mean_density_  = 1.0;
     double admittance_primary_ = 0.0, admittance_collector_ = 0.0;
-    std::array<double, 4> port_flow_{};
+    std::array<double, 4> port_flow_{}, port_open_{};
+    std::array<double, 4> previous_flow_{}, previous_open_{};
+    std::array<double, 4> ramped_{}, open_{};
+    std::array<OnePole, 4> source_{};
     std::array<double, 4> valve_pressure_{};
+    OnePole mouth_, radiation_;
     double decimator_ = 0.0;
     int    decimation_count_ = 0;
     double mass_ = 0.0;
     double audio_debt_ = 0.0;
-    double lowpass_state_ = 0.0, previous_mouth_ = 0.0;
+    double previous_mouth_ = 0.0;
     std::vector<double> samples_;
 };
 

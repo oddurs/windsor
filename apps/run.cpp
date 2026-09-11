@@ -91,25 +91,37 @@ int app::run(int argc, char** argv) {
     const double redline  = 6200.0;
     const double frame    = 1.0 / 30.0;
 
-    bool  wide_open = false;
-    bool  running   = true;
+    double throttle  = 0.0;
+    bool   running   = true;
     auto  wall      = std::chrono::steady_clock::now();
 
     while (running) {
         // ── Advance the engine by one frame of real time ──────────────────
         double simulated = 0.0;
         while (simulated < frame) {
-            e.throttle(e.rpm() > redline ? 0.0 : (wide_open ? 1.0 : 0.0));
+            e.throttle(e.rpm() > redline ? 0.0 : throttle);
             simulated += step / e.crank_speed();
             e.step(step);
             e.bank(Bank::left).clear_samples();     // nobody is listening
             e.bank(Bank::right).clear_samples();
         }
 
-        switch (terminal.key()) {
-            case ' ': wide_open = !wide_open; break;
-            case 'q': case 3: running = false; break;
-            default: break;
+        // A throttle is a plate on a spindle and it is not a switch. The
+        // model has always known that — `Induction::open_area` opens as
+        // (1 − cos α) across ninety degrees of rotation, which is why the
+        // first ten degrees of pedal do almost nothing and the next ten do
+        // everything — but this instrument used to offer only shut and wide
+        // open, which threw away every interesting part of it. The digits are
+        // tenths of throttle; you can sit it at a cruise and watch the vacuum
+        // advance wind in.
+        switch (const int key = terminal.key()) {
+            case ' ':  throttle = (throttle < 0.99) ? 1.0 : 0.0;      break;
+            case '+': case '=': throttle = std::min(1.0, throttle + 0.05); break;
+            case '-': case '_': throttle = std::max(0.0, throttle - 0.05); break;
+            case 'q': case 3: running = false;                        break;
+            default:
+                if (key >= '0' && key <= '9') throttle = (key - '0') / 9.0;
+                break;
         }
 
         // ── Draw ──────────────────────────────────────────────────────────
@@ -124,8 +136,9 @@ int app::run(int argc, char** argv) {
         std::printf("  \033[1m%5.0f\033[0m\n", e.rpm());
 
         std::printf("  load  ");
-        bar(wide_open ? 1.0 : 0.04, 46, "\033[0;33m");
-        std::printf("  %s\n\n", wide_open ? "\033[1mWIDE OPEN\033[0m" : "closed   ");
+        bar(throttle, 46, "\033[0;33m");
+        std::printf("  \033[1m%3.0f%%\033[0m %-9s\n\n", throttle * 100.0,
+                    throttle > 0.99 ? "wide open" : throttle < 0.01 ? "closed" : "part");
 
         std::printf("   cyl        bore, TDC to BDC              stroke      pressure\n");
         for (int c : e.crankshaft().firing_order()) {
@@ -156,7 +169,7 @@ int app::run(int argc, char** argv) {
         std::printf("  backpressure     %5.1f kPa      crank angle    %4.0f deg\n",
                     as::kPa(e.bank(Bank::right).backpressure()), as::deg(e.crank_angle()));
 
-        std::printf("\n  \033[2mSPACE — throttle      Q — stop\033[0m\n");
+        std::printf("\n  \033[2m0-9 throttle    +/- trim    SPACE wide open    Q stop\033[0m\n");
         std::fflush(stdout);
 
         wall += std::chrono::microseconds(static_cast<long>(frame * 1e6));

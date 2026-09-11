@@ -25,10 +25,10 @@ But an engine does not exhale through its flywheel. It exhales through two
 exhaust manifolds, and a manifold is not connected to an engine — it is
 connected to *four cylinders*, and it only ever hears those four:
 
-| | each bank hears |
-|---|---|
-| **cross-plane** (throws at 0°, 90°, 180°, 270°) | 90° — 180° — 270° — 180° |
-| **flat-plane** (throws at 0°, 180°, 0°, 180°) | 180° — 180° — 180° — 180° |
+|                                                 | each bank hears           |
+| ----------------------------------------------- | ------------------------- |
+| **cross-plane** (throws at 0°, 90°, 180°, 270°) | 90° — 180° — 270° — 180°  |
+| **flat-plane** (throws at 0°, 180°, 0°, 180°)   | 180° — 180° — 180° — 180° |
 
 That is the entire difference. A cross-plane bank coughs twice in quick
 succession, waits three quarters of a turn, and coughs again — a limping,
@@ -113,16 +113,16 @@ Nothing in the model was fitted to any of it. A selection:
 **The cylinder head, against a flow bench.** The port model is curtain area,
 a discharge coefficient, and a throat cap. Run it at 28 inches of water:
 
-| lift | model | published, stock C8OE castings |
-|---|---|---|
-| 0.375 in (the cam's peak) | 146 cfm | ~150 cfm at 0.400 in |
+| lift                      | model   | published, stock C8OE castings |
+| ------------------------- | ------- | ------------------------------ |
+| 0.375 in (the cam's peak) | 146 cfm | ~150 cfm at 0.400 in           |
 
 **The engine, against Ford.** `./windsor dyno`:
 
-| | model | Ford, 1968 302-2V (gross) |
-|---|---|---|
-| peak torque | 310 lb-ft @ 2000 | 300 lb-ft @ 2600 |
-| peak power | 236 hp @ 5000 | 210 hp @ 4600 |
+|             | model            | Ford, 1968 302-2V (gross) |
+| ----------- | ---------------- | ------------------------- |
+| peak torque | 320 lb-ft @ 2000 | 300 lb-ft @ 2600          |
+| peak power  | 237 hp @ 5000    | 210 hp @ 4600             |
 
 About ten percent optimistic, with no fitting anywhere. The missing ten
 percent has names, and they are listed below.
@@ -137,12 +137,12 @@ to the same scale. Throttled, the intake stroke sinks to 0.2 bar while the
 exhaust stroke sits at 1.5, and the anticlockwise loop that opens between them
 is work the engine spends on breathing:
 
-| at 2000 rpm | gross | pumping | net |
-|---|---|---|---|
-| wide open | 12.40 bar | −0.22 bar | 12.19 bar |
-| throttled | 1.17 bar | **−1.08 bar** | 0.10 bar |
+| at 2000 rpm | gross     | pumping       | net       |
+| ----------- | --------- | ------------- | --------- |
+| wide open   | 12.39 bar | −0.03 bar     | 12.36 bar |
+| throttled   | 1.20 bar  | **−0.93 bar** | 0.27 bar  |
 
-Ninety-two percent of everything it makes, spent on suffocating itself. That
+Seventy-eight percent of everything it makes, spent on suffocating itself. That
 is the price of controlling a petrol engine with a plate across its throat,
 and it is most of why a diesel is more efficient at part load and barely more
 efficient at full.
@@ -164,11 +164,11 @@ agree with itself: 9.5:1, 34° of total advance, and what was in the tank in 196
 different question — `balance.hpp` resolves each piston's inertia force along
 its own bore axis and Fourier-transforms the sum over a revolution:
 
-| at 3000 rpm | cross-plane | flat-plane |
-|---|---|---|
-| primary force | 0 N | 0 N |
-| **secondary force** | **0 N** | **5000 N** |
-| what it traces | a circle — a counterweight opposes it | a line — nothing can |
+| at 3000 rpm         | cross-plane                       | flat-plane                    |
+| ------------------- | --------------------------------- | ----------------------------- |
+| primary force       | 0 N                               | 0 N                           |
+| **secondary force** | **0 N**                           | **5000 N**                    |
+| what it traces      | a circle — counterweights take it | a line — nothing can touch it |
 
 Half a tonne, a hundred times a second, and no counterweight on a shaft
 turning at ω can oppose a force that goes at 2ω. The flat crank sounds better
@@ -178,16 +178,16 @@ and shakes. That is the bill for the noise, and it is why almost nobody pays it.
 whole-order energy at idle — half-orders being the signature of a pulse train
 that repeats every *two* revolutions instead of one:
 
-| | cross-plane | flat-plane | |
-|---|---|---|---|
-| one bank alone | **2.13** | **0.025** | 86× |
-| both banks summed | **0.135** | **0.053** | 2.5× |
+|                | cross-plane | flat-plane |     |
+| -------------- | ----------- | ---------- | --- |
+| one bank alone | **1.23**    | **0.047**  | 26× |
 
-with 4.5 and 5.0 order standing 19 and 21 dB louder on the cross-plane crank.
+The firing fundamental carries 81% of the energy and only 6% sits above
+1.4 kHz, which is what a V8 idle looks like on an analyser.
 
-That second row is itself a real result: summing two banks recombines them
-toward an even train and cancels much of the unevenness, which is why people
-have argued about H-pipes and true duals for sixty years.
+Summing two banks recombines them toward an even train and cancels much of the
+unevenness, which is why people have argued about H-pipes and true duals for
+sixty years.
 
 ---
 
@@ -283,8 +283,8 @@ is a design decision. Each of these is named in the file where it bites.
   It was reverted anyway. It cost 7× the runtime, and it destroyed the one
   measurement this project exists to make: the flat-plane bank's half-order
   share went from 0.02 to 3.8 and the ratio between the two crankshafts
-  collapsed from 118× to 1×. An engine that cannot tell the two cranks apart is
-  of no use here however good its shocks are.
+  collapsed to 1×. An engine that cannot tell the two cranks apart is of no use
+  here however good its shocks are.
 
   The lesson is worth the whole detour: a delay line has **no** numerical
   dissipation — it is the exact solution to the linear problem, not an

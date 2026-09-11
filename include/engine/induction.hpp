@@ -61,6 +61,7 @@ public:
     struct Setup {
         double plenum_volume;     // m³ — the space under the carburettor
         double throttle_bore;     // m  — total, across all barrels
+        double venturi_area;      // m² — total, and the real limit. See below.
         double idle_bypass_area;  // m² — the leak that keeps it running closed
         double manifold_heating;  // K  — a cast-iron intake with an exhaust
                                   //      crossover cast into its floor,
@@ -127,10 +128,38 @@ private:
     // whose area goes as (1 − cos α), which is why the first ten degrees of
     // pedal travel do almost nothing and the next ten do everything, and why
     // progressive linkages and, eventually, drive-by-wire had to be invented.
+    //
+    // ── And the plate is not the restriction ──────────────────────────────
+    //
+    // Wide open, the throttle plate is edge-on to the airflow and barely there.
+    // What is still there, at every throttle position, is the VENTURI: the
+    // waist the barrel is narrowed to so that the air speeds up through it and
+    // drops enough pressure to pull fuel out of a hole in the side. A
+    // carburettor has to restrict the engine in order to work at all. That is
+    // the deal it makes — it meters fuel by measuring airflow, and the only
+    // way it can measure airflow is by getting in its way.
+    //
+    // The 1968 302-2V ran an Autolite 2100 with two 1.08-inch venturis, rated
+    // at 287 cfm. Two of those come to 11.8 cm², against 24.6 cm² of throttle
+    // bore — so wide open, better than half the restriction in the induction
+    // system is a hole that cannot be opened, and the engine is breathing
+    // through it at 6000 rpm exactly as hard as it is at 1000.
+    //
+    // This is most of why a 2V engine makes its power at 4400 rpm and the
+    // otherwise identical 4V makes more of it at 4800, and it is the whole
+    // reason the first thing anyone ever did to one of these was throw the
+    // carburettor away.
+    //
+    // Two restrictions in series do not add; their reciprocal squares do,
+    // because each one costs a pressure drop and the drops are what add.
     double open_area(double throttle) const {
         const double alpha = std::clamp(throttle, 0.0, 1.0) * (si::pi * 0.5);
         const double bore_area = si::pi * 0.25 * s_.throttle_bore * s_.throttle_bore;
-        return s_.idle_bypass_area + bore_area * (1.0 - std::cos(alpha));
+        const double plate = s_.idle_bypass_area + bore_area * (1.0 - std::cos(alpha));
+
+        if (s_.venturi_area <= 0.0) return plate;
+        return 1.0 / std::sqrt(1.0 / (plate * plate)
+                             + 1.0 / (s_.venturi_area * s_.venturi_area));
     }
 
     Setup  s_;

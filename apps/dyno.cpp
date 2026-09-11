@@ -197,7 +197,7 @@ int app::dyno(int argc, char** argv) {
 
     std::printf("\n  peak torque   %.0f lb-ft at %.0f rpm\n", as::lbft(best_t.torque), best_t.rpm);
     std::printf("  peak power    %.0f hp    at %.0f rpm\n",   as::hp(best_p.power),   best_p.rpm);
-    std::printf("\n\033[2m  Ford published, 1968 302-2V, gross: 210 hp at 4600, 300 lb-ft at 2600.\n");
+    std::printf("\n\033[2m  Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400, gross.\n");
     std::printf("  Nothing here was fitted to those numbers.\n\n");
     std::printf("  The knock index is worst at the bottom of the range, where the end gas\n");
     std::printf("  has the most milliseconds to sit and cook. It is an index and not a\n");

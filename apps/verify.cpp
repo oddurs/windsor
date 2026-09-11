@@ -304,9 +304,11 @@ int app::verify(int, char**) {
     {
         const double intake = cam.intake().diameter();
 
-        sheet.within("stock head at the cam's peak lift, 28in H2O",
-                     cfm_at_28(cam.intake().max_lift(), intake), 135.0, 160.0, "cfm");
-        sheet.note("published for stock C8OE castings: about 150 cfm at 0.400 in");
+        sheet.within("stock head at 0.400 in lift, 28in H2O",
+                     cfm_at_28(0.400_in, intake), 140.0, 160.0, "cfm");
+        sheet.note("published for stock C8OE-F castings: about 150 cfm there");
+        sheet.within("and at the cam's own peak lift, 0.426 in",
+                     cfm_at_28(cam.intake().max_lift(), intake), 135.0, 165.0, "cfm");
 
         // Effective area should stop growing once the throat takes over.
         double best = 0.0, best_ratio = 0.0;
@@ -315,8 +317,11 @@ int app::verify(int, char**) {
             if (area > best) { best = area; best_ratio = r; }
         }
         sheet.within("effective area peaks and then goes flat", best_ratio, 0.14, 0.24, "L/D");
-        sheet.within("and the cam lifts to right about there",
-                     cam.intake().max_lift() / intake, 0.14, 0.24, "L/D");
+        sheet.exceeds("and the factory cam lifts PAST that",
+                      cam.intake().max_lift() / intake, best_ratio, "L/D");
+        sheet.note("0.426 in on a 1.773 in valve is L/D 0.24, past where the throat");
+        sheet.note("stops the curtain growing. a cam is ground for area under the whole");
+        sheet.note("curve, not for the one lift where the head is happiest.");
 
         const double area = port::effective_area(3.0e-3, cam.exhaust().diameter());
         sheet.holds("blowdown into an atmospheric pipe chokes",
@@ -325,17 +330,40 @@ int app::verify(int, char**) {
                     port::mass_flow(area, 101325.0, 320.0, 130000.0, 400.0) < 0.0);
     }
 
-    // ── The camshaft ──────────────────────────────────────────────────────
-    sheet.section("THE CAMSHAFT");
+    // ── The camshaft, against the card ────────────────────────────────────
+    sheet.section("THE CAMSHAFT, AGAINST THE 1968 CARD");
     {
-        sheet.within("IVO, before top dead centre",
-                     360.0 - as::deg(cam.intake().opens()), 15.0, 30.0, "deg");
-        sheet.within("IVC, after bottom dead centre",
-                     as::deg(cam.intake().closes()) - 540.0, 55.0, 75.0, "deg");
-        sheet.within("EVO, before bottom dead centre",
-                     180.0 - as::deg(cam.exhaust().opens()), 55.0, 75.0, "deg");
-        sheet.within("overlap", as::deg(cam.overlap()), 30.0, 55.0, "deg");
+        sheet.note("the card gives four events and two durations. the model is built from");
+        sheet.note("centrelines and a separation angle, so all six of these are derived.");
+        sheet.matches("intake duration, advertised",
+                      as::deg(cam.intake().duration()), 266.0, 0.01);
+        sheet.matches("exhaust duration, advertised",
+                      as::deg(cam.exhaust().duration()), 256.0, 0.01);
+        sheet.matches("IVO, before top dead centre",
+                      360.0 - as::deg(cam.intake().opens()), 16.0, 0.02);
+        sheet.matches("IVC, after bottom dead centre",
+                      as::deg(cam.intake().closes()) - 540.0, 70.0, 0.02);
+        sheet.matches("EVO, before bottom dead centre",
+                      180.0 - as::deg(cam.exhaust().opens()), 52.0, 0.02);
+        sheet.matches("EVC, after top dead centre",
+                      as::deg(cam.exhaust().closes()) - 360.0, 24.0, 0.02);
+        sheet.matches("overlap", as::deg(cam.overlap()), 40.0, 0.02);
         sheet.note("a card quotes centrelines about the gas-exchange TDC, 360 deg away");
+    }
+
+    // ── The carburettor ───────────────────────────────────────────────────
+    sheet.section("THE CARBURETTOR");
+    {
+        const double depression = 3.0 * 3386.4;      // 3 inHg, the 2V standard
+        const double venturi    = 2.0 * 0.25 * pi * (1.08_in) * (1.08_in);
+        const double mdot = port::mass_flow(venturi, p_atmosphere, 288.15,
+                                            p_atmosphere - depression, 288.15);
+        const double cfm = mdot / (p_atmosphere / (air::R * 288.15)) * 2118.88;
+
+        sheet.within("two 1.08 in venturis, area", venturi * 1e4, 11.0, 12.5, "cm2");
+        sheet.within("flowing at 3 inHg", cfm, 270.0, 320.0, "cfm");
+        sheet.note("Autolite rate the 2100 at 287 cfm; the gap is its discharge");
+        sheet.note("coefficient, which the geometry alone cannot know");
     }
 
     // ── What was never typed in ───────────────────────────────────────────
@@ -428,8 +456,9 @@ int app::verify(int, char**) {
         sheet.note("too early is knock and a hole in a piston; too late is heat out of the pipe");
         sheet.within("exhaust primary pressure swing, low",
                      as::bar(e.bank(Bank::right).port_boundary(0).pressure), 0.3, 3.0, "bar");
-        sheet.within("torque at 3000 rpm", as::lbft(e.torque()), 250.0, 340.0, "lb-ft");
-        sheet.note("Ford published 300 lb-ft at 2600 for the 1968 302-2V, gross");
+        sheet.within("torque at 3000 rpm", as::lbft(e.torque()), 250.0, 320.0, "lb-ft");
+        sheet.note("Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400,");
+        sheet.note("gross. the model makes 306 at 1985 and 206 at 4994.");
     }
 
 

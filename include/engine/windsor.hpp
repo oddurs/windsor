@@ -29,8 +29,17 @@ inline constexpr Geometry short_block() {
     return Geometry{
         Bore{4.000_in},            // standard, before any overbore
         Stroke{3.000_in},
-        RodLength{5.090_in},       // 302; the 289 used the same rod
-        CompressionRatio{9.5}      // 1968 2V, on leaded regular
+        RodLength{5.090_in},       // the C8OE rod. NOT the 289's, which is
+                                   // 5.155 in: Ford shortened it by 0.065 when
+                                   // the stroke grew from 2.870 to 3.000,
+                                   // because half of that 0.130 of extra
+                                   // stroke has to come out of the rod or the
+                                   // piston comes out of the top of the block
+        CompressionRatio{9.5}      // 1968 2V, on leaded regular. The chamber
+                                   // itself is only 53.5 cc; the rest of the
+                                   // 72.7 cc of clearance volume is head
+                                   // gasket, deck clearance and the dish in
+                                   // the piston crown
     };
 }
 
@@ -39,12 +48,32 @@ inline constexpr Geometry short_block() {
 // a vacuum figure the power brakes can live on, and modest duration because
 // this engine was sold to people who wanted it to start in February.
 inline constexpr Camshaft stock_cam() {
+    // Off the 1968 spec sheet, and every figure here is theirs:
+    //
+    //      intake    266° advertised, 0.426 in lift
+    //                opens 16° BTDC, closes 70° ABDC
+    //      exhaust   256° advertised, 0.425 in lift
+    //                opens 52° BBDC, closes 24° ATDC
+    //      overlap   40°
+    //
+    // The two durations are NOT the same, and an earlier version of this file
+    // assumed they were. A production cam almost never grinds them equal: the
+    // exhaust has sixty bar of blowdown helping it and needs less time, the
+    // intake has one atmosphere and needs all it can get. Ten degrees is the
+    // usual difference and it is ten degrees in the intake's favour.
+    //
+    // The centrelines follow from those four events rather than being quoted
+    // separately: intake peak at (−16 + 250)/2 = 117° after the gas-exchange
+    // TDC, exhaust peak 104° before it, so the lobes are separated by 110.5°.
+    // Tighter than the 112 this file used to assume, which is why it idles
+    // with a little more lope than it did.
     return Camshaft::from_card(
-        266.0_deg, 266.0_deg,      // advertised duration, in / ex
-        0.375_in,  0.375_in,       // lift AT THE VALVE, after 1.6:1 rockers
-        112.0_deg,                 // intake centreline, ATDC
-        112.0_deg,                 // lobe separation
-        1.780_in,  1.450_in);      // valve head diameters, stock heads
+        266.0_deg, 256.0_deg,      // advertised duration, in / ex
+        0.426_in,  0.425_in,       // lift AT THE VALVE, after 1.6:1 rockers
+        117.0_deg,                 // intake centreline, ATDC
+        110.5_deg,                 // lobe separation
+        1.773_in,  1.442_in);      // valve heads: 45.0 and 36.6 mm exactly,
+                                   // which is what they were drawn in
 }
 
 // ── The crankshaft ────────────────────────────────────────────────────────
@@ -133,6 +162,8 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
         Induction::Setup{
             2.0_L,                 // under a cast-iron 2V intake
             0.056_m,               // both barrels of an Autolite 2100, as one
+            2.0 * 0.25 * si::pi * 1.08_in * 1.08_in,   // and its two 1.08 in
+                                   // venturis, which is the actual limit
             18.0e-6,               // idle bypass: the curb idle screw, set to
                                    // idle the engine at about 690 rpm. It is
                                    // the one figure here that has to be reset

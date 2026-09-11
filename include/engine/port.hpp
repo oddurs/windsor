@@ -72,7 +72,14 @@ inline double discharge_coefficient(double lift_over_diameter) {
     // Past the peak the jet separates and a growing share of the curtain is
     // carrying recirculation rather than air. A good head sags slowly; this is
     // most of what porting buys.
-    return std::max(0.30, peak_cd - 1.32 * (x - peak_at));
+    //
+    // CALIBRATED, and against the only thing there is to calibrate against: a
+    // flow bench. Stock 302 C8OE-F castings are published at about 150 cfm at
+    // 0.400 in of lift and 28 inches of water, and 0.90 is the sag that puts
+    // this curve there. It was 1.32 for a while, which flowed 139, and the
+    // error went unnoticed because the camshaft in `windsor.hpp` was carrying
+    // a wrong lift figure at the time and never asked the head for more.
+    return std::max(0.30, peak_cd - 0.90 * (x - peak_at));
 }
 
 // The area the gas really has. The curtain, discounted by Cd, and capped by the

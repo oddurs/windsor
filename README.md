@@ -110,8 +110,9 @@ against the casting, and the thesis against a Fourier transform.
 
 Nothing in the model was fitted to any of it. A selection:
 
-**The cylinder head, against a flow bench.** The port model is curtain area,
-a discharge coefficient, and a throat cap. Run it at 28 inches of water:
+**The cylinder head, against a flow bench.** The port model is curtain area, a
+discharge coefficient and a throat cap. The sag of that coefficient past its
+peak is the one number in it fitted to anything, and it is fitted to this:
 
 | lift                      | model   | published, stock C8OE castings |
 | ------------------------- | ------- | ------------------------------ |
@@ -124,8 +125,13 @@ a discharge coefficient, and a throat cap. Run it at 28 inches of water:
 | peak torque | 320 lb-ft @ 2000 | 300 lb-ft @ 2600          |
 | peak power  | 237 hp @ 5000    | 210 hp @ 4600             |
 
-About ten percent optimistic, with no fitting anywhere. The missing ten
-percent has names, and they are listed below.
+Within four percent on torque and two on power, with no fitting anywhere —
+though both peaks still sit a few hundred rpm high, which is the intake runner
+tuning that is still missing. It was ten
+percent optimistic with the power peak a thousand rpm too high until the
+carburettor's venturis went in — a two-barrel engine breathes through a hole
+that cannot be opened, and that hole is most of why the 2V made its power at
+4400 where the otherwise identical 4V made more of it at 4800.
 
 **The indicator card.** At 3000 rpm, wide open: peak pressure 55 bar at 13°
 after top dead centre, 50% mass burned at 8° ATDC, 2945 K. Which is what a

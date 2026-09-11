@@ -18,6 +18,7 @@
 // meant. This asks whether the engine is true.
 
 #include "apps.hpp"
+#include <engine/riemann.hpp>
 #include <algorithm>
 #include <cmath>
 #include <complex>
@@ -174,6 +175,38 @@ std::vector<double> idle_recording(Engine&& e, double& rpm_out) {
     return track;
 }
 
+
+
+// ── Sod's shock tube, which has an exact answer ───────────────────────────
+// Two bodies of gas at different pressures, released. Toro's Newton iteration
+// on the star pressure gives the analytic solution to compare against, which
+// is the only reason this is a verification rather than a demonstration.
+void star_function(double p, const Primitive& side, double& f, double& df) {
+    const double g = Gas::gamma;
+    const double a = std::sqrt(g * side.pressure / side.density);
+    if (p > side.pressure) {                       // a shock that way
+        const double A = 2.0 / ((g + 1.0) * side.density);
+        const double B = (g - 1.0) / (g + 1.0) * side.pressure;
+        const double q = std::sqrt(A / (B + p));
+        f  = (p - side.pressure) * q;
+        df = q * (1.0 - 0.5 * (p - side.pressure) / (B + p));
+    } else {                                       // an expansion that way
+        const double ratio = p / side.pressure;
+        f  = 2.0 * a / (g - 1.0) * (std::pow(ratio, (g - 1.0) / (2.0 * g)) - 1.0);
+        df = 1.0 / (side.density * a) * std::pow(ratio, -(g + 1.0) / (2.0 * g));
+    }
+}
+
+double exact_star_pressure(const Primitive& left, const Primitive& right) {
+    double p = 0.5 * (left.pressure + right.pressure);
+    for (int i = 0; i < 80; ++i) {
+        double fL, dfL, fR, dfR;
+        star_function(p, left,  fL, dfL);
+        star_function(p, right, fR, dfR);
+        p = std::max(p - (fL + fR + (right.velocity - left.velocity)) / (dfL + dfR), 1e-6);
+    }
+    return p;
+}
 
 // Hold an engine at a speed the way the dyno does — load it with what it is
 // already making, and trim — then hand back what it settled at.
@@ -429,6 +462,95 @@ int app::verify(int, char**) {
         sheet.holds("quieter on a rich mixture than on stoich",
                     hold_at(Engine{altered(9.5, 94.0, 0.0)}, 2500.0, 1.30).knock < stock);
         sheet.note("so compression ratio, advance and octane are one decision, not three");
+    }
+
+
+    // ── What the pipes in this engine are not ─────────────────────────────
+    sheet.section("WHAT THE PIPES ARE NOT");
+    {
+        sheet.note("exhaust.hpp models a pipe as two delay lines, which is exact for a");
+        sheet.note("LINEAR wave and clamps its source at Mach 1 because a blowdown is not");
+        sheet.note("one. riemann.hpp is the nonlinear solver that says what that costs.");
+
+        // First, is the solver itself trustworthy?
+        const Primitive left { 1.000, 0.0, 1.0e5 };
+        const Primitive right{ 0.125, 0.0, 1.0e4 };
+        Duct tube{ 1.0, 400, left };
+        for (std::size_t i = 200; i < 400; ++i) tube.set(i, right);
+
+        double t = 0.0;
+        while (t < 0.7e-3) {
+            const double dt = std::min(tube.courant_limit(), 0.7e-3 - t);
+            tube.left_ghost(left);
+            tube.right_ghost(right);
+            tube.step(dt);
+            t += dt;
+        }
+        double plateau = 0.0; int counted = 0;
+        for (std::size_t i = 0; i < 400; ++i) {
+            const double speed = ((double(i) + 0.5) / 400.0 - 0.5) / 0.7e-3;
+            if (speed > 60.0 && speed < 300.0) { plateau += tube.at(i).pressure; ++counted; }
+        }
+        sheet.matches("shock tube, against the exact Riemann solution",
+                      plateau / counted, exact_star_pressure(left, right), 2e-3);
+
+        // Now: does a pressure front actually steepen as it travels?
+        const double hot = si::p_atmosphere / (air::R * 900.0);
+        Duct pipe{ 0.80, 400, { hot, 0.0, si::p_atmosphere } };
+
+        // A linear wave travels at the speed of sound in the undisturbed gas.
+        // Exactly. That is what linear means, and it is what the delay lines
+        // in exhaust.hpp assume when they are given a length and a delay.
+        //
+        // A shock does not. Its crest is hotter than the gas ahead of it and
+        // is being carried forward by the flow behind it, so it overtakes its
+        // own front, and the front — once vertical — runs AHEAD of sound. That
+        // is the cleanest measurable difference between the two models, and it
+        // needs no appeal to how steep anything looks: time the front past two
+        // stations and divide.
+        //
+        // (Steepening itself is not measurable here, and it is worth saying
+        // why: with fifty bar behind the valve the front becomes a shock
+        // within the first few centimetres and then stays one. There is
+        // nothing left to watch by the time it reaches a station.)
+        constexpr double near_station = 0.20, far_station = 0.60;
+        const double     trigger = si::p_atmosphere * 1.10;
+
+        double travelled = 0.0, at_near = 0.0, at_far = 0.0;
+        while (travelled < 2.0e-3 && at_far == 0.0) {
+            const double dt = pipe.courant_limit();
+            const Primitive inside = pipe.left_face();
+            pipe.left_ghost(travelled < 0.15e-3
+                ? Primitive{ 50.0e5 / (air::R * 1400.0), 0.0, 50.0e5 }
+                : Primitive{ inside.density, -inside.velocity, inside.pressure });
+            const Primitive mouth = pipe.right_face();
+            pipe.right_ghost({ mouth.density, mouth.velocity, si::p_atmosphere });
+            pipe.step(dt);
+            travelled += dt;
+
+            const auto cell_at = [&](double x) { return std::size_t(x / 0.80 * 400.0); };
+            if (at_near == 0.0 && pipe.at(cell_at(near_station)).pressure > trigger)
+                at_near = travelled;
+            if (at_near > 0.0 && at_far == 0.0 && pipe.at(cell_at(far_station)).pressure > trigger)
+                at_far = travelled;
+        }
+
+        const double front_speed = (far_station - near_station) / std::max(at_far - at_near, 1e-9);
+        const double sound_speed = air::speed_of_sound(900.0);
+
+        // Anywhere from sound itself to a strong shock. The claim being made
+        // is the NEXT line; this one only asserts the number is a speed a
+        // pressure front in a pipe could actually have.
+        sheet.within("the blowdown front's speed down the pipe",
+                     front_speed, 580.0, 2500.0, "m/s");
+        sheet.holds("which is FASTER than sound in the gas ahead of it",
+                    front_speed > sound_speed * 1.05,
+                    (std::to_string(int(100.0 * (front_speed / sound_speed - 1.0))) + "% over").c_str());
+        sheet.note("sound in 900 K exhaust is 586 m/s, and a linear wave travels at exactly");
+        sheet.note("that. this one does not, because it is a shock: its crest is hotter than");
+        sheet.note("the gas ahead and is carried forward by the flow behind, so it outruns");
+        sheet.note("its own front. it is why the crack of an exhaust is sharper at the pipe");
+        sheet.note("than it was at the valve, and the engine here cannot reproduce it.");
     }
 
     // ── The thesis ────────────────────────────────────────────────────────

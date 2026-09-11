@@ -73,35 +73,73 @@
 // on its overlap feels it, and breathes better or worse for it.
 //
 // This costs more than it looks. The cylinder solution and the gas dynamics
-// now have to be integrated together, the waveguide has to run fast enough
-// that the crank cannot step over it at 6000 rpm, and a mass flow has to be
+// have to be integrated together, the waveguide has to run fast enough that
+// the crank cannot step over it at 6000 rpm, and a mass flow has to be
 // converted into a travelling wave with the right magnitude rather than an
 // arbitrary one:
 //
-//      p⁺ = ρ·c·u,        u = ṁ / ρA
+//      p⁺ = ρ·c·u = ρ·c·(ṁ / ρA) = c·ṁ / A
 //
-// with one limit that has to be respected or the whole thing detonates. A
-// plane wave cannot carry particle velocity faster than sound — past Mach 1
-// what is leaving the valve is a jet, not a wave, and its surplus momentum is
-// spent stirring the pipe rather than travelling down it. A linear waveguide
-// has no way to become a shock, so left unbounded it will happily report
-// thirty-five bar in a header that has never seen three, the cylinder will
-// find it cannot exhale against its own exhaust, and the engine will make
-// negative power with complete confidence. It did exactly that, once.
+// — where the density cancels, which is the small piece of luck that makes
+// this tractable.
 //
-// So u is clamped at the local speed of sound, which caps the source at
+// ── The clamp, and what it costs ──────────────────────────────────────────
 //
-//      p⁺max = ρc² = γ·p̄
+// One limit has to be respected or the whole thing detonates. A plane wave
+// cannot carry particle velocity faster than sound — past Mach 1 what is
+// leaving the valve is a jet, not a wave, and its surplus momentum is spent
+// stirring the pipe rather than travelling down it. A linear waveguide has no
+// way to become a shock, so left unbounded it will happily report thirty-five
+// bar in a header that has never seen three, the cylinder will find it cannot
+// exhale against its own exhaust, and the engine will make negative power with
+// complete confidence. It did exactly that, once.
 //
+// So u is clamped at the local speed of sound, capping the source at ρc² = γp̄
 // — about 1.8 bar over a mean of 1.3, which is what a primary pipe actually
-// sees at blowdown. The clamp is the honest boundary of a linear model, not a
-// tuning constant, and the real fix is a nonlinear method-of-characteristics
-// solver, which is what proper engine gas-dynamics codes are.
+// sees at blowdown.
 //
-// What it buys is that header length now changes the torque curve and not
-// only the note, that the pulses leaving one bank are no longer all identical,
-// and that the difference between the two crankshafts survives being summed
-// with the other bank. It did not, before.
+// That clamp is the honest boundary of a linear model, and `riemann.hpp` is
+// what it costs, measured rather than asserted. Run `windsor verify`: a real
+// blowdown front, solved without any clamp at all, travels down a primary at
+// 1409 m/s — Mach 2.4, against 586 m/s for sound in the gas ahead of it. It is
+// a shock. It outruns its own sound because its crest is hotter than the gas
+// in front and is carried forward by the flow behind, and that is why the
+// crack of an exhaust is sharper at the tailpipe than it was at the valve.
+//
+// Nothing in this file can produce that. Two delay lines propagate at exactly
+// one speed, forever, which is what makes them exact for a linear wave and
+// wrong for this one.
+//
+// ── And why it is still the model that ships ──────────────────────────────
+//
+// The nonlinear solver was built, verified against Sod's shock tube to one
+// part in a hundred thousand, and wired into this engine in place of the delay
+// lines. It worked. Pipe pressures came out physically correct without a clamp
+// anywhere, and header length finally became worth something real — 14% of
+// torque across a length scan, peaking at 1.2 m at 4500 rpm where the old
+// builder's rule of thumb predicts 1.10 m, against 1.8% and no peak at all
+// from the delay lines.
+//
+// It was reverted anyway, for two reasons and a lesson.
+//
+// It cost seven times the runtime. And it destroyed the one measurement this
+// entire project exists to make: the flat-plane bank's half-order share, which
+// ought to be nearly nothing, went from 0.02 to 3.8, and the ratio between the
+// two crankshafts collapsed from 118 to 1. Somewhere in the coupled pipes the
+// scheme manufactures cycle-to-cycle variation that an evenly-firing bank does
+// not have, and an engine that cannot tell the two crankshafts apart is of no
+// use here however good its shocks are.
+//
+// The lesson is the interesting part. A delay line has NO numerical
+// dissipation — it is the exact solution to the linear problem, not an
+// approximation to it. A finite-volume scheme, however carefully limited, is
+// diffusive everywhere. For a problem that is mostly linear propagation with
+// occasional violence, the cruder-looking model is the more faithful one over
+// most of the cycle, and the first-order version of the "better" solver was
+// measurably WORSE at header tuning than the delay lines it replaced.
+//
+// That is not an argument against ever doing it properly. It is a record of
+// what was tried, what it bought, and what it broke.
 
 #pragma once
 

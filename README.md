@@ -103,7 +103,7 @@ forging** — which is exactly what Ford did — and the order becomes
 ./windsor verify
 ```
 
-Forty-two checks, in a third of a second, every one of them against something
+Fifty-five checks, in a couple of seconds, every one of them against something
 outside the project — a derivative against finite differences, a burn rate
 against its own integral, a cylinder head against a flow bench, a firing order
 against the casting, and the thesis against a Fourier transform.
@@ -209,6 +209,7 @@ include/engine/
   friction.hpp     the tax
   induction.hpp    the throttle, and the vacuum behind it
   ignition.hpp     deciding when, with no way of knowing
+  riemann.hpp      what two bodies of gas do to each other
   exhaust.hpp      four pipes, a collector, and the noise
   engine.hpp       the assembly
   windsor.hpp      the engine itself, as built
@@ -271,10 +272,32 @@ is a design decision. Each of these is named in the file where it bites.
 - **Intake runner tuning.** Each runner is an organ pipe worth ~10% of peak
   torque in a narrow band. The plenum here is one well-stirred volume.
   This is most of the missing ten percent.
-- **Nonlinear gas dynamics.** The waveguide is linear, so the source has to be
-  clamped at Mach 1 — past which what leaves the valve is a jet, not a wave.
-  Real engine gas-dynamics codes use method of characteristics. This is why
-  header tuning here is worth ~2% instead of ~8%.
+- **Nonlinear gas dynamics** — and this one was built, measured, and reverted,
+  which is the most interesting entry on the list. `riemann.hpp` is a
+  second-order finite-volume Euler solver, verified against Sod's shock tube to
+  one part in 10⁵. Wired into the engine in place of the delay lines it removed
+  the Mach 1 clamp entirely and made header length worth **14% of torque**,
+  peaking at 1.2 m at 4500 rpm where the old builder's rule predicts 1.10 m —
+  against 1.8% and no peak from the waveguide.
+
+  It was reverted anyway. It cost 7× the runtime, and it destroyed the one
+  measurement this project exists to make: the flat-plane bank's half-order
+  share went from 0.02 to 3.8 and the ratio between the two crankshafts
+  collapsed from 118× to 1×. An engine that cannot tell the two cranks apart is
+  of no use here however good its shocks are.
+
+  The lesson is worth the whole detour: a delay line has **no** numerical
+  dissipation — it is the exact solution to the linear problem, not an
+  approximation to it — while any finite-volume scheme is diffusive everywhere.
+  For a problem that is mostly linear propagation with occasional violence, the
+  cruder-looking model is the more faithful one over most of the cycle.
+
+  What survives is the measurement. `./windsor verify` fires a real blowdown
+  front down a primary with no clamp at all and clocks it at **1409 m/s** —
+  Mach 2.4, against 586 m/s for sound in the gas ahead. It is a shock, it
+  outruns its own sound, and it is why the crack of an exhaust is sharper at
+  the tailpipe than at the valve. The shipped model cannot produce that, and
+  now says so with a number instead of an apology.
 - **Blow-by, oil temperature, crankshaft torsion, dissociation above 2000 K.**
 
 None of these would change the shape of the project.

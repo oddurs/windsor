@@ -104,7 +104,7 @@ public:
 
     // ── Controls ──────────────────────────────────────────────────────────
     void throttle(double fraction) { throttle_ = std::clamp(fraction, 0.0, 1.0); }
-    void mixture(double phi)       { phi_ = phi; }
+    void mixture(double phi)       { phi_ = phi; induction_.mixture(phi); }
 
     // What the dynamometer's water brake is absorbing. A dyno does not measure
     // an engine's torque by asking it; it loads the engine until the speed
@@ -131,11 +131,26 @@ public:
     // from all eight cylinders, less the friction tax, divided by the 4π of
     // crank rotation a four-stroke needs to collect it.
     double torque() const { return last_cycle_torque_; }
+
+    // How many complete cycles have been integrated. A torque figure only
+    // changes when one finishes, so this is how an instrument knows there is
+    // a fresh reading on the dial rather than the same one sampled twice.
+    unsigned long long cycles() const { return cycles_; }
     double power()  const { return torque() * omega_; }
 
     double manifold_vacuum() const { return induction_.vacuum(); }
     double spark_advance()   const { return advance_; }
     double peak_pressure()   const { return peak_pressure_; }
+
+    // The worst-off cylinder. Knock is never uniform across eight of them —
+    // the ones at the ends of the block run hotter, the ones fed by the long
+    // runners run leaner, and an engine is only ever as advanced as its most
+    // detonation-prone hole will tolerate.
+    double knock_severity() const {
+        double worst = 0.0;
+        for (const Cylinder& c : cylinders_) worst = std::max(worst, c.knock_severity());
+        return worst;
+    }
 
     const Cylinder&   cylinder(int n) const { return cylinders_[n - 1]; }
     const Crankshaft& crankshaft()    const { return spec_.crankshaft; }
@@ -215,6 +230,7 @@ private:
             last_cycle_torque_ = cycle_work_ / cycle_angle_;
             peak_pressure_     = cycle_peak_;
             cycle_work_ = cycle_angle_ = cycle_peak_ = 0.0;
+            ++cycles_;
         }
     }
 
@@ -235,6 +251,7 @@ private:
 
     double cycle_work_ = 0.0, cycle_angle_ = 0.0, cycle_peak_ = 0.0;
     double last_cycle_torque_ = 0.0;
+    unsigned long long cycles_ = 0;
     double peak_pressure_     = 30.0e5;   // a plausible first guess for friction
 };
 

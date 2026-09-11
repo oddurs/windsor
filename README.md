@@ -131,6 +131,19 @@ percent has names, and they are listed below.
 after top dead centre, 50% mass burned at 8° ATDC, 2945 K. Which is what a
 pressure trace off a 1968 wedge chamber looks like.
 
+**The fuel, which is what stops the engine.** The Livengood–Wu integral over
+Douaud–Eyzat ignition delay: the end gas spends a fraction `dt/τ` of its
+patience each instant, and detonates when the account reaches 1. It reports an
+index rather than a verdict — the threshold of 1 belongs to the CFR engine the
+correlation was fitted on, and this model runs about five times pessimistic on
+a Ford wedge, for reasons `knock.hpp` names rather than divides out. What it
+gets right are the comparisons, which is what compression ratio and spark
+advance are actually chosen by: knock worsens at low rpm, with advance, with
+compression, with cheaper fuel, and eases on a rich mixture.
+
+Which makes three numbers that were arbitrary into one decision that has to
+agree with itself: 9.5:1, 34° of total advance, and what was in the tank in 1968.
+
 **The balance, which is why the crank exists.** The same rod table, asked a
 different question — `balance.hpp` resolves each piston's inertia force along
 its own bore axis and Fourier-transforms the sum over a revolution:
@@ -172,6 +185,7 @@ include/engine/
   balance.hpp      why the cross-plane crank exists at all
   charge.hpp       the working fluid, and what is dissolved in it
   wiebe.hpp        how fast the fire spreads
+  knock.hpp        the constraint that decides everything
   woschni.hpp      heat going where it does no good
   camshaft.hpp     the only part of the engine that decides anything
   port.hpp         the bottleneck
@@ -244,8 +258,6 @@ is a design decision. Each of these is named in the file where it bites.
   clamped at Mach 1 — past which what leaves the valve is a jet, not a wave.
   Real engine gas-dynamics codes use method of characteristics. This is why
   header tuning here is worth ~2% instead of ~8%.
-- **Knock.** Needs end-gas chemistry, and is the constraint that actually
-  decides compression ratio.
 - **Blow-by, oil temperature, crankshaft torsion, dissociation above 2000 K.**
 
 None of these would change the shape of the project.

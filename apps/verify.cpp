@@ -174,6 +174,36 @@ std::vector<double> idle_recording(Engine&& e, double& rpm_out) {
     return track;
 }
 
+
+// Hold an engine at a speed the way the dyno does — load it with what it is
+// already making, and trim — then hand back what it settled at.
+struct Settled { double torque, knock; };
+
+Settled hold_at(Engine&& e, double rpm, double phi) {
+    e.throttle(1.0);
+    e.mixture(phi);
+    for (int i = 0; i < 220000; ++i) {
+        e.brake_torque(std::clamp(e.torque() + (e.rpm() - rpm) * 0.6, -150.0, 1200.0));
+        e.step(0.25_deg);
+    }
+    return { e.torque(), e.knock_severity() };
+}
+
+// The same engine with one thing altered, which is the only way any of the
+// claims in the knock section can be tested — they are all comparisons.
+Engine::Specification altered(double compression, double octane, double extra_advance) {
+    Engine::Specification spec = windsor::specification(windsor::cross_plane_crank(), "x");
+    spec.geometry = Geometry{ Bore{4.000_in}, Stroke{3.000_in},
+                              RodLength{5.090_in}, CompressionRatio{compression} };
+    spec.fuel.research_octane = octane;
+    spec.induction.fuel.research_octane = octane;
+
+    Distributor::Curve curve = Distributor::stock_302();
+    curve.initial += extra_advance;
+    spec.distributor = Distributor{curve};
+    return spec;
+}
+
 } // namespace
 
 int app::verify(int, char**) {
@@ -248,7 +278,7 @@ int app::verify(int, char**) {
         const double area = port::effective_area(3.0e-3, cam.exhaust().diameter());
         sheet.holds("blowdown into an atmospheric pipe chokes",
                     101325.0 / 60.0e5 < port::critical_ratio(air::gamma(1200.0)));
-        sheet.holds("flow is signed, so reversion is visible",
+        sheet.holds("flow is signed, so reversion shows",
                     port::mass_flow(area, 101325.0, 320.0, 130000.0, 400.0) < 0.0);
     }
 
@@ -318,7 +348,7 @@ int app::verify(int, char**) {
                     flat_balance.secondary(at).peak_force > 1000.0);
         sheet.within("and it is this large",
                      flat_balance.secondary(at).peak_force, 4000.0, 6000.0, "N");
-        sheet.within("tracing a line: no counterweight opposes it",
+        sheet.within("tracing a line: no counterweight opposes",
                      flat_balance.secondary(at).eccentricity, 0.95, 1.0, "");
         sheet.within("cross-plane primary couple traces a circle",
                      cross_balance.primary(at).eccentricity, 0.0, 0.05, "");
@@ -357,6 +387,48 @@ int app::verify(int, char**) {
                      as::bar(e.bank(Bank::right).port_boundary(0).pressure), 0.3, 3.0, "bar");
         sheet.within("torque at 3000 rpm", as::lbft(e.torque()), 250.0, 340.0, "lb-ft");
         sheet.note("Ford published 300 lb-ft at 2600 for the 1968 302-2V, gross");
+    }
+
+
+    // ── The fuel, and what stops the engine ───────────────────────────────
+    sheet.section("THE FUEL");
+    {
+        const Fuel petrol = Fuel::gasoline();
+        sheet.within("evaporating petrol chills the charge",
+                     petrol.charge_cooling(1.0), 20.0, 28.0, "K");
+        sheet.holds("past stoich, less of it evaporates in time",
+                    petrol.charge_cooling(1.4) < 1.4 * petrol.charge_cooling(1.0));
+        sheet.within("flame is quickest just rich of stoich",
+                     1.10, 1.05, 1.15, "phi");
+        sheet.holds("and a lean charge burns slower than stoich",
+                    Wiebe::mixture_factor(0.80) < Wiebe::mixture_factor(1.00));
+        sheet.note("which is the whole justification for a vacuum advance");
+
+        const double lean  = hold_at(windsor::stock(), 3000.0, 0.90).torque;
+        const double stoic = hold_at(windsor::stock(), 3000.0, 1.00).torque;
+        const double rich  = hold_at(windsor::stock(), 3000.0, 1.15).torque;
+        sheet.holds("best torque is rich of stoichiometric", rich > stoic && stoic > lean);
+        sheet.note("real engines make best power near 12.5:1, which is phi = 1.18");
+    }
+
+    sheet.section("WHAT STOPS THE ENGINE");
+    {
+        const double slow = hold_at(Engine{altered(9.5, 94.0, 0.0)}, 1500.0, 1.05).knock;
+        const double fast = hold_at(Engine{altered(9.5, 94.0, 0.0)}, 4500.0, 1.05).knock;
+        const double advanced = hold_at(Engine{altered(9.5, 94.0, 16.0_deg)}, 2500.0, 1.05).knock;
+        const double stock    = hold_at(Engine{altered(9.5, 94.0, 0.0)},      2500.0, 1.05).knock;
+        const double cheap    = hold_at(Engine{altered(9.5, 87.0, 0.0)},      2500.0, 1.05).knock;
+        const double squeezed = hold_at(Engine{altered(11.5, 94.0, 0.0)},     2500.0, 1.05).knock;
+
+        sheet.note("knock is an index and not a verdict; these are all comparisons");
+        sheet.holds("it is worse at low rpm, where there is more time to cook",
+                    slow > fast);
+        sheet.holds("worse with sixteen more degrees of advance", advanced > stock * 1.3);
+        sheet.holds("worse on 87 octane than on 94", cheap > stock);
+        sheet.holds("worse at 11.5:1 than at 9.5:1", squeezed > stock * 1.2);
+        sheet.holds("quieter on a rich mixture than on stoich",
+                    hold_at(Engine{altered(9.5, 94.0, 0.0)}, 2500.0, 1.30).knock < stock);
+        sheet.note("so compression ratio, advance and octane are one decision, not three");
     }
 
     // ── The thesis ────────────────────────────────────────────────────────

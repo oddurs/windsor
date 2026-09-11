@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <engine/si.hpp>
 
@@ -49,6 +50,35 @@ public:
     {}
 
     constexpr double duration() const { return duration_; }
+
+    // ── How long the burn takes depends on what is burning ────────────────
+    //
+    // A flame front moves at the mixture's laminar flame speed, multiplied up
+    // by whatever turbulence the chamber can muster. That laminar speed is not
+    // constant: it peaks slightly RICH of stoichiometric, near φ = 1.1, where
+    // there is just enough surplus fuel to keep the reaction fed and not yet
+    // enough to smother it, and it falls away on both sides. A parabola
+    // through the measurements is enough.
+    //
+    // The lean side is the side that matters. A thin mixture, heavily diluted
+    // with the previous cycle's exhaust — which is exactly the cylinder of an
+    // engine cruising at light throttle — burns markedly slower, and needs to
+    // be lit markedly earlier. That is the entire justification for the vacuum
+    // advance mechanism in `ignition.hpp`, which has been claiming this since
+    // it was written without anything here to back it up.
+    static double mixture_factor(double equivalence_ratio) {
+        constexpr double fastest_at = 1.10;
+        const double off = equivalence_ratio - fastest_at;
+        return std::clamp(1.0 - 2.1 * off * off, 0.25, 1.0);
+    }
+
+    // The same burn, taking longer or less long. A charge lights once, and
+    // whatever it was mixed at is what decides its pace for the whole cycle.
+    Wiebe paced_for(double equivalence_ratio) const {
+        Wiebe slower = *this;
+        slower.duration_ = duration_ / mixture_factor(equivalence_ratio);
+        return slower;
+    }
 
     // Mass fraction burned, `since_ignition` crank radians after the spark.
     // Zero before the spark and clamped at the top: a charge cannot burn twice.

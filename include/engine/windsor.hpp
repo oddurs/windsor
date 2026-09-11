@@ -134,7 +134,9 @@ inline Engine::Specification specification(Crankshaft crank, const char* name) {
             2.0_L,                 // under a cast-iron 2V intake
             0.056_m,               // both barrels of an Autolite 2100, as one
             25.0e-6,               // idle bypass: the curb idle screw
-            320.0_K                // charge temperature after the hot intake
+            55.0_K,                // what the exhaust crossover adds. petrol
+                                   // takes about 24 K of it straight back
+            Fuel::gasoline()
         },
 
         // Left bank: the long way round, over the bellhousing.

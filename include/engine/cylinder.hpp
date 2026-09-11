@@ -54,6 +54,7 @@
 #include <engine/camshaft.hpp>
 #include <engine/charge.hpp>
 #include <engine/geometry.hpp>
+#include <engine/knock.hpp>
 #include <engine/port.hpp>
 #include <engine/si.hpp>
 #include <engine/wiebe.hpp>
@@ -97,7 +98,7 @@ public:
         double   crankcase_pressure;      // Pa, pushing back on the piston underside
     };
 
-    explicit Cylinder(Setup setup) : s_{setup} {
+    explicit Cylinder(Setup setup) : s_{setup}, burning_{setup.combustion} {
         // Start cold and full of atmosphere, which is what an engine that has
         // been sitting overnight actually contains.
         charge_.mass        = air::mass(si::p_atmosphere, si::T_standard,
@@ -114,6 +115,11 @@ public:
     double temperature()       const { return charge_.temperature; }
     double volume()            const { return volume_now_; }
     double burned_fraction()   const { return charge_.burned; }
+
+    // How much of the end gas's patience was spent on the last cycle. One is
+    // detonation; anything over about 0.8 is an engine that will knock on a
+    // hot day, on a hill, in traffic. See `knock.hpp`.
+    double knock_severity()    const { return knock_.severity(); }
     double trapped_air()       const { return trapped_mass_; }
 
     // Work delivered to the piston over the last completed cycle, by integrating
@@ -184,6 +190,7 @@ public:
         // reports the latched one — not the live accumulator, which if sampled
         // mid-induction will report anything at all.
         if (closed_intake(theta, dtheta)) {
+            knock_.reset();               // a fresh charge, a fresh account
             trapped_mass_ = inducted_mass_;
             fuel_mass_ = s_.fuel.mass_for(trapped_mass_, equivalence_ratio);
             reference_ = { p, T, V };     // Woschni's anchor, and the motoring datum
@@ -197,19 +204,29 @@ public:
         // coming up, which is heard as knock and felt as a hole in the piston.
         const double spark_at = fold(-spark_advance);
         if (!ignited_ && fuel_mass_ > 0.0 && crossed(theta, spark_at, dtheta)) {
-            ignited_       = true;
-            since_spark_   = 0.0;
+            ignited_     = true;
+            since_spark_ = 0.0;
+            // The pace is fixed at the moment of lighting, by what is in there.
+            burning_     = s_.combustion.paced_for(equivalence_ratio);
         }
 
         double burn_power = 0.0;
         if (ignited_) {
-            const double dx = s_.combustion.burn_rate(since_spark_) * dtheta;
+            const double dx = burning_.burn_rate(since_spark_) * dtheta;
             charge_.burned += dx;
             burn_power      = fuel_mass_ * s_.fuel.lower_heating_value
                             * s_.fuel.combustion_efficiency(equivalence_ratio)
                             * dx / dt;
             since_spark_   += dtheta;
         }
+
+        // ── The end gas, cooking ──────────────────────────────────────────
+        // The mixture the flame has not reached yet is being compressed by the
+        // flame, and is deciding whether to wait. See `knock.hpp`.
+        knock_.elapse(dt, p,
+                      Knock::end_gas_temperature(reference_.temperature,
+                                                 reference_.pressure, p),
+                      s_.fuel.research_octane, charge_.burned);
 
         // ── Heat into the coolant ─────────────────────────────────────────
         const double p_motored = Woschni::motored_pressure(reference_, V);
@@ -311,6 +328,7 @@ private:
     }
 
     Setup  s_;
+    Wiebe  burning_;          // this cycle's burn, paced by this cycle's mixture
     Charge charge_{};
     Woschni::Reference reference_{};
 
@@ -320,6 +338,7 @@ private:
     double fuel_mass_        = 0.0;
     double since_spark_      = 0.0;
     bool   ignited_          = false;
+    Knock::Account knock_{};
 
     double work_accumulator_ = 0.0;
     double last_cycle_work_  = 0.0;

@@ -34,10 +34,26 @@ struct Fuel {
                                   // in the exhaust, which leaves out of the
                                   // tailpipe as steam and is never recovered.
     double stoichiometric_ratio;  // kg air per kg fuel for complete combustion
-    double octane;                // knock resistance, (RON+MON)/2 as pumped
 
+    // Latent heat of vaporisation, J/kg. Every drop of petrol that goes into
+    // an engine arrives as a liquid and has to be boiled before it can burn,
+    // and the heat to boil it is stolen from the air it is boiling into. This
+    // is not a detail. See `charge_cooling` below.
+    double latent_heat;
+
+    // RESEARCH octane, not the number on the pump. An American pump advertises
+    // (RON+MON)/2, which is about four points lower, which is why the same
+    // fuel is 87 in Michigan and 91 in Milan. The knock model was fitted
+    // against RON and will detonate a perfectly good engine on paper if handed
+    // the other one. See `knock.hpp`.
+    double research_octane;
+
+    // What came out of a pump in 1968, with tetraethyl lead still in it.
+    // Leaded regular ran about 94 RON — better than most unleaded regular
+    // today, which is the quiet reason a 9.5:1 engine of this era was
+    // perfectly happy and its 1975 descendant had to drop to 8.0:1.
     static constexpr Fuel gasoline() {
-        return { 44.0e6, 14.7, 91.0 };
+        return { 44.0e6, 14.7, 350.0e3, 94.0 };
     }
 
     // Fuel mass to burn with a given mass of air at a given equivalence ratio.
@@ -47,6 +63,42 @@ struct Fuel {
     // evaporates. Peak torque lives near φ = 1.1, peak efficiency near 0.9.
     constexpr double mass_for(double air_mass, double equivalence_ratio) const {
         return air_mass * equivalence_ratio / stoichiometric_ratio;
+    }
+
+    // How far the charge is chilled by the fuel evaporating into it.
+    //
+    //      ΔT = m_fuel · h_fg / (m_air · c_p)
+    //
+    // and at stoichiometric that is about 24 K of free intercooling, which
+    // makes the charge denser, which lets more air into the cylinder, which
+    // makes more power than the fuel would have made by burning.
+    //
+    // It is also why running rich makes power. The two comments in this file
+    // that say so have been saying so since the first week without anything
+    // behind them; this is the something. Past stoichiometric the surplus fuel
+    // cannot burn — `combustion_efficiency` below says as much — but it can
+    // still evaporate, and it goes on chilling the charge and quieting the end
+    // gas long after it has stopped contributing any heat. A racer running
+    // 12:1 air-fuel is not burning that extra petrol. He is air-conditioning
+    // with it.
+    // Not all of it evaporates where it would do good. Up to about
+    // stoichiometric, a warm manifold gets essentially the whole charge into
+    // vapour before the inlet valve. Past that the air is close to saturated
+    // with petrol at manifold temperature, and the surplus stays liquid — it
+    // wets the runner walls, arrives as droplets, and boils inside the
+    // cylinder during compression, where the cooling comes too late to have
+    // let any more air in. So the useful half of it stops counting. This is
+    // why a carburettor's fuel film lags the throttle, and why the accelerator
+    // pump exists to cover the moment it does.
+    constexpr double charge_cooling(double equivalence_ratio) const {
+        constexpr double cp_air   = 1005.0;    // J/(kg·K), near ambient
+        constexpr double in_port  = 0.5;       // of the surplus, past stoich
+
+        const double evaporating = equivalence_ratio <= 1.0
+            ? equivalence_ratio
+            : 1.0 + (equivalence_ratio - 1.0) * in_port;
+
+        return evaporating / stoichiometric_ratio * latent_heat / cp_air;
     }
 
     // How much of it actually burns.

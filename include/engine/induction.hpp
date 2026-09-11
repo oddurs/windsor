@@ -62,15 +62,31 @@ public:
         double plenum_volume;     // m³ — the space under the carburettor
         double throttle_bore;     // m  — total, across all barrels
         double idle_bypass_area;  // m² — the leak that keeps it running closed
-        double charge_temperature;// K  — after the hot intake manifold has had
-                                  //      its say; a cast-iron intake with an
-                                  //      exhaust crossover under it heats the
-                                  //      charge 30 K and costs power to do it
+        double manifold_heating;  // K  — a cast-iron intake with an exhaust
+                                  //      crossover cast into its floor,
+                                  //      deliberately warming the charge so
+                                  //      the fuel stays evaporated instead of
+                                  //      puddling in the runners on a cold
+                                  //      morning. It costs power every mile
+                                  //      afterwards and it is why the engine
+                                  //      starts in February
+        Fuel   fuel;
     };
 
     explicit Induction(Setup s) : s_{s} {
-        mass_        = air::mass(si::p_atmosphere, s_.charge_temperature, s_.plenum_volume);
-        temperature_ = s_.charge_temperature;
+        mass_        = air::mass(si::p_atmosphere, charge_temperature(), s_.plenum_volume);
+        temperature_ = charge_temperature();
+    }
+
+    // What the mixture is set to. The carburettor's business, and the plenum's
+    // only because evaporating fuel chills what it evaporates into.
+    void mixture(double equivalence_ratio) { phi_ = equivalence_ratio; }
+
+    // Ambient, plus what the manifold adds, less what the fuel takes back as
+    // it boils. Three numbers pulling in two directions, and the net of them
+    // is the density of everything that goes into the engine.
+    double charge_temperature() const {
+        return si::T_standard + s_.manifold_heating - s_.fuel.charge_cooling(phi_);
     }
 
     // What the intake ports see. This is the `Boundary` a cylinder is handed.
@@ -103,7 +119,7 @@ public:
         // cylinder heads has enormous thermal mass and does not care what one
         // intake stroke did to it.
         mass_ = std::max(mass_ + (in - port_flow) * dt, 1e-9);
-        temperature_ += (temperature_ - s_.charge_temperature) * -std::min(1.0, dt * 50.0);
+        temperature_ += (temperature_ - charge_temperature()) * -std::min(1.0, dt * 50.0);
     }
 
 private:
@@ -118,6 +134,7 @@ private:
     }
 
     Setup  s_;
+    double phi_ = 1.0;
     double mass_;
     double temperature_;
 };

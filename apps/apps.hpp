@@ -19,6 +19,7 @@ int spec  (int argc, char** argv);
 int dyno  (int argc, char** argv);
 int run   (int argc, char** argv);
 int record(int argc, char** argv);
+int verify(int argc, char** argv);
 
 // Every instrument can be clipped to either crankshaft, because the whole
 // point of the project is the comparison.

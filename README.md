@@ -99,8 +99,16 @@ forging** — which is exactly what Ford did — and the order becomes
 
 ## Does it work?
 
-Everything below was measured, not asserted. Nothing in the model was fitted
-to any of it.
+```
+./windsor verify
+```
+
+Forty-two checks, in a third of a second, every one of them against something
+outside the project — a derivative against finite differences, a burn rate
+against its own integral, a cylinder head against a flow bench, a firing order
+against the casting, and the thesis against a Fourier transform.
+
+Nothing in the model was fitted to any of it. A selection:
 
 **The cylinder head, against a flow bench.** The port model is curtain area,
 a discharge coefficient, and a throat cap. Run it at 28 inches of water:
@@ -123,14 +131,27 @@ percent has names, and they are listed below.
 after top dead centre, 50% mass burned at 8° ATDC, 2945 K. Which is what a
 pressure trace off a 1968 wedge chamber looks like.
 
-**The sound, against itself.** The whole point. Measuring half-order energy
-against whole-order energy in the recorded idle — half-orders being the
-signature of a pulse train that repeats every *two* revolutions instead of
-one:
+**The balance, which is why the crank exists.** The same rod table, asked a
+different question — `balance.hpp` resolves each piston's inertia force along
+its own bore axis and Fourier-transforms the sum over a revolution:
+
+| at 3000 rpm | cross-plane | flat-plane |
+|---|---|---|
+| primary force | 0 N | 0 N |
+| **secondary force** | **0 N** | **5000 N** |
+| what it traces | a circle — a counterweight opposes it | a line — nothing can |
+
+Half a tonne, a hundred times a second, and no counterweight on a shaft
+turning at ω can oppose a force that goes at 2ω. The flat crank sounds better
+and shakes. That is the bill for the noise, and it is why almost nobody pays it.
+
+**The sound, against itself.** The whole point. Half-order energy against
+whole-order energy at idle — half-orders being the signature of a pulse train
+that repeats every *two* revolutions instead of one:
 
 | | cross-plane | flat-plane | |
 |---|---|---|---|
-| one bank alone | **0.730** | **0.029** | 25× |
+| one bank alone | **2.13** | **0.025** | 86× |
 | both banks summed | **0.135** | **0.053** | 2.5× |
 
 with 4.5 and 5.0 order standing 19 and 21 dB louder on the cross-plane crank.
@@ -148,6 +169,7 @@ include/engine/
   si.hpp           inside the engine, everything is SI. one rule, no exceptions
   geometry.hpp     the crank-slider, which is the entire machine
   crankshaft.hpp   where the sound comes from
+  balance.hpp      why the cross-plane crank exists at all
   charge.hpp       the working fluid, and what is dissolved in it
   wiebe.hpp        how fast the fire spreads
   woschni.hpp      heat going where it does no good
@@ -166,6 +188,7 @@ apps/
   dyno.cpp         a water brake on the flywheel
   run.cpp          a gauge cluster, wired to the sensors
   record.cpp       three feet behind the tailpipe
+  verify.cpp       the inspection sheet
 ```
 
 The engine is a sealed mechanism that turns and gets hot and knows nothing
@@ -237,6 +260,7 @@ make
 ./windsor dyno       put it on a water brake and sweep it
 ./windsor run        watch it idle  (SPACE for throttle, Q to stop)
 ./windsor record     stand behind it with a microphone
+./windsor verify     check every number this project quotes
 ```
 
 Flags: `--flat` fits the billet flat-plane crankshaft, `--ho` the 1982 H.O.

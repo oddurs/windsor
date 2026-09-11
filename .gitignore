@@ -1,0 +1,7 @@
+build/
+*.o
+*.wav
+*.csv
+windsor
+.DS_Store
+compile_commands.json

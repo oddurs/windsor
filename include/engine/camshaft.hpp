@@ -136,21 +136,44 @@ public:
         return o > 0.0 ? o : 0.0;
     }
 
-    // Build a cam the way a catalogue lists one: durations, lifts, and where
-    // the intake peak sits. Exhaust centreline follows from the LSA.
+    // Build a cam the way a catalogue lists one.
+    //
+    // WHICH TDC. A four-stroke piston reaches top dead centre twice per cycle,
+    // and a cam card means the other one. Card angles are quoted about the
+    // gas-exchange TDC — the one between the exhaust and intake strokes, with
+    // both valves cracked and nothing but inertia in the chamber — because
+    // that is the TDC the camshaft's own events happen near, and the one a
+    // builder has a degree wheel pointed at while he is turning the engine
+    // over by hand with the rocker covers off.
+    //
+    // Everything else in this project is referenced to FIRING top dead centre,
+    // 360° away, because that is the one the crankshaft cares about. So the
+    // card is translated here, at the boundary, once:
+    //
+    //      intake peak    =  360° + ICL       (ICL quoted after gas-exchange TDC)
+    //      exhaust peak   =  360° − ECL       (ECL quoted before it)
+    //      ECL            =  2·LSA − ICL
+    //
+    // Get this wrong by 360° — and it is an easy 360° to lose — and the engine
+    // will take its intake stroke during combustion, run backwards in the
+    // thermodynamic sense, and make a confident negative horsepower.
     static constexpr Camshaft from_card(double intake_duration,
                                         double exhaust_duration,
                                         double intake_lift,
                                         double exhaust_lift,
-                                        double intake_centreline,   // after TDC
+                                        double intake_centreline,   // ATDC, gas exchange
                                         double lobe_separation,
                                         double intake_valve_diameter,
                                         double exhaust_valve_diameter)
     {
-        const double exhaust_centreline = intake_centreline - 2.0 * lobe_separation;
+        const double gas_exchange_tdc   = si::two_pi;               // 360° of crank
+        const double exhaust_centreline = 2.0 * lobe_separation - intake_centreline;
+
         return Camshaft{
-            Lobe{intake_centreline,  intake_duration,  intake_lift,  intake_valve_diameter},
-            Lobe{exhaust_centreline, exhaust_duration, exhaust_lift, exhaust_valve_diameter}
+            Lobe{gas_exchange_tdc + intake_centreline,
+                 intake_duration,  intake_lift,  intake_valve_diameter},
+            Lobe{gas_exchange_tdc - exhaust_centreline,
+                 exhaust_duration, exhaust_lift, exhaust_valve_diameter}
         };
     }
 

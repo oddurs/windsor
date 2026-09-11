@@ -48,6 +48,28 @@ struct Fuel {
     constexpr double mass_for(double air_mass, double equivalence_ratio) const {
         return air_mass * equivalence_ratio / stoichiometric_ratio;
     }
+
+    // How much of it actually burns.
+    //
+    // Never all of it. Even with oxygen to spare, a couple of percent survives:
+    // fuel hiding in the crevice above the top ring where the flame is too
+    // narrow to enter, and a quenched layer a few tenths of a millimetre thick
+    // against every wall, where the metal pulls heat out of the flame front
+    // faster than the reaction can make it. That fuel leaves unburned, and it
+    // is most of what a catalytic converter is there to finish.
+    //
+    // Past stoichiometric it is no longer a matter of geometry. There is
+    // simply not enough oxygen in the cylinder, and the surplus fuel leaves as
+    // carbon monoxide and hydrogen no matter how good the chamber is. The
+    // burned fraction falls as 1/φ, which is why running rich makes power by a
+    // route that has nothing to do with burning more fuel — the extra petrol
+    // makes power by evaporating, cooling the charge, and letting more air in.
+    constexpr double combustion_efficiency(double equivalence_ratio) const {
+        constexpr double crevice_and_quench = 0.98;
+        return equivalence_ratio <= 1.0
+             ? crevice_and_quench
+             : crevice_and_quench / equivalence_ratio;
+    }
 };
 
 // ── The gas ───────────────────────────────────────────────────────────────

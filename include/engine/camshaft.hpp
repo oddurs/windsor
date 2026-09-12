@@ -107,7 +107,6 @@ public:
         return max_lift_ * 0.5 * (1.0 + std::cos(si::pi * phase / half));
     }
 
-    bool is_open(double theta) const { return lift(theta) > 0.0; }
 
 private:
     double centreline_, duration_, max_lift_, diameter_;

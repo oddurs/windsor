@@ -516,6 +516,7 @@ int app::verify(int, char**) {
         const Primitive right{ 0.125, 0.0, 1.0e4 };
         Duct tube{ 1.0, 400, left };
         for (std::size_t i = 200; i < 400; ++i) tube.set(i, right);
+        const Conserved before = tube.contents();
 
         double t = 0.0;
         while (t < 0.7e-3) {
@@ -532,6 +533,16 @@ int app::verify(int, char**) {
         }
         sheet.matches("shock tube, against the exact solution",
                       plateau / counted, exact_star_pressure(left, right), 2e-3);
+
+        // The defining property of the scheme, and the reason it is written in
+        // mass, momentum and energy rather than in the pressures and velocities
+        // anyone would rather read: what leaves one cell arrives in the next,
+        // exactly, and a shock cannot manufacture or destroy any of it. Over
+        // this interval the waves have not reached either end, so nothing has
+        // crossed a boundary and the totals must not have moved at all.
+        const Conserved after = tube.contents();
+        sheet.matches("and it invented no mass doing it",   after.mass,   before.mass,   1e-12);
+        sheet.matches("and destroyed no energy either",     after.energy, before.energy, 1e-12);
 
         // Now: does a pressure front actually steepen as it travels?
         const double hot = si::p_atmosphere / (air::R * 900.0);

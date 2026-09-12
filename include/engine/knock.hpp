@@ -1,118 +1,81 @@
 // knock.hpp — the constraint that decides everything.
 //
 // Compression ratio, spark advance, and what the pump charges for the fuel are
-// not three separate decisions. They are one decision, and this file is it.
+// not three decisions. They are one, and this file is it.
 //
-// ── What is actually happening ────────────────────────────────────────────
+// ── What is happening ─────────────────────────────────────────────────────
 //
-// The spark lights one point in the chamber and a flame front walks outward
-// from it at ten or twenty metres a second. Ahead of that front is the END
-// GAS: the last of the mixture, sitting in the far corner of the chamber, and
-// being compressed not only by the piston but by the expansion of everything
-// that has already burned. It gets very hot — twelve hundred kelvin is
-// ordinary — and it sits there, waiting its turn, cooking.
+// The spark lights one point in the chamber and a flame walks outward at ten
+// or twenty metres a second. Ahead of it is the END GAS: the last of the
+// mixture, in the far corner, compressed not only by the piston but by the
+// expansion of everything that has already burned. Twelve hundred kelvin is
+// ordinary. It sits there, waiting its turn, cooking.
 //
 // Petrol does not need a spark. Given enough temperature and enough time it
-// will light on its own; that is what a diesel is. So the whole of spark
-// ignition is a race: the flame front has to arrive and consume the end gas
-// before the end gas decides to go by itself.
-//
-// If it loses that race, the end gas does not burn — it detonates, all of it
-// at once, at something like a thousand metres a second. The pressure spike
-// rings the block like a bell, which is the sound, and the shockwave strips
-// the insulating boundary layer off the piston crown, which is the damage. A
-// sustained detonation will melt a hole through the top of a piston in under a
-// minute. The noise and the destruction are the same event.
+// lights on its own — that is what a diesel is. So spark ignition is a race:
+// the flame has to arrive and consume the end gas before the end gas goes by
+// itself. Lose that race and it does not burn, it detonates, all at once, at a
+// thousand metres a second. The pressure spike rings the block, which is the
+// sound, and the shockwave strips the insulating boundary layer off the piston
+// crown, which is the damage. They are the same event.
 //
 // ── Livengood and Wu, 1955 ────────────────────────────────────────────────
 //
-// The difficulty is that autoignition is not a threshold. The end gas does not
-// light when it gets to some temperature; it lights when it has spent enough
-// time hot, and "enough" depends on how hot, continuously, over a history that
-// is changing every degree of crank rotation.
+// Autoignition is not a threshold. The end gas does not light at some
+// temperature; it lights when it has spent enough time hot, and "enough"
+// depends on how hot, continuously, over a history changing every degree of
+// crank rotation.
 //
-// John Livengood and Paul Wu proposed that you simply keep a running account.
-// If τ(p, T) is how long this mixture would take to light if held at these
-// conditions, then in each instant dt it uses up the fraction dt/τ of its
-// patience. Integrate:
+// Livengood and Wu proposed keeping a running account. If τ(p,T) is how long
+// this mixture would take to light if held at these conditions, then in each
+// instant dt it spends the fraction dt/τ of its patience:
 //
-//      ∫ dt / τ(p, T)   =   1      →  it goes off
+//      ∫ dt / τ(p, T)  =  1      →  it goes off
 //
-// That is the whole model. It has no chemistry in it. It is the same species
-// of idea as Wiebe's curve and Woschni's coefficient — a thing that turned out
-// to be true enough, for long enough, that the mechanistic models built to
-// replace it are still mostly used to calibrate it.
+// There is no chemistry in it. It is the same species of idea as Wiebe's curve
+// and Woschni's coefficient — a thing true enough for long enough that the
+// mechanistic models built to replace it are mostly used to calibrate it.
 //
-// The delay τ comes from Douaud and Eyzat, 1978, who fitted it on a CFR engine:
+// The delay comes from Douaud and Eyzat, 1978, fitted on a CFR engine:
 //
 //      τ = 17.68 · (ON/100)^3.402 · p^(−1.7) · exp(3800/T)     ms, atm, K
 //
-// Note the exponent on octane. Going from 91 to 100 octane nearly doubles τ —
-// which is the entire commercial value of the number on the pump, and why a
-// tenth of a point of it is worth arguing about.
+// Note the exponent on octane. Going from 91 to 100 nearly doubles τ, which is
+// the entire commercial value of the number on the pump.
 //
-// ── Why this file is worth having ─────────────────────────────────────────
+// ── An index, not a verdict ───────────────────────────────────────────────
 //
-// Without it, nothing in the project stops you. Raise the compression ratio to
-// fourteen, wind in sixty degrees of advance, and the model will hand you the
-// extra power with a straight face — because the only thing that was ever
-// going to object is the fuel, and the fuel was not being asked.
+// Run this on the engine as Ford built it and the integral comes out near 5,
+// which would say a stock 302 detonated itself to pieces every time anyone
+// opened the secondaries. It did not.
 //
-// With it, three numbers that were arbitrary become a system that has to
-// agree with itself: 9.5:1, 34° of total advance, and the octane rating of
-// what was in the tank in 1968. Change any one and the others have to move.
+// The integral is fine; the threshold is borrowed. Douaud and Eyzat fitted
+// that leading constant on a CFR engine — a single-cylinder laboratory
+// instrument with a chamber nothing like a Ford wedge. The value 1 means
+// autoignition in THAT engine. Carried elsewhere unre-fitted, the correlation
+// keeps its shape and loses its calibration.
 //
-// ── What the number means, and what it does not ───────────────────────────
+// Dividing by 5 to make the stock engine read 1.0 would be fitting the model
+// to flatter itself, which is the one thing house rule two exists to forbid.
+// So the constant stays as published and the number is reported raw. Read it
+// as an index: it cannot tell you whether this engine knocks, but it will tell
+// you, with the right sensitivities, that it knocks more at 1500 rpm than at
+// 4500 because the end gas has more milliseconds to cook; more on 87 octane
+// than on 94; more at eleven to one than at nine and a half; and a great deal
+// more with sixteen extra degrees wound into it. Those are the questions
+// compression ratio and advance are actually chosen by, and they are all
+// comparisons.
 //
-// An awkward result, reported rather than tidied away.
+// ── Octane numbers ───────────────────────────────────────────────────────
 //
-// Run this model on the engine as Ford built it — 9.5:1, 94 RON leaded
-// regular, 34° of total advance — and the integral comes out around 4.8 at
-// wide open throttle. Taken at face value that says a stock 1968 302 detonated
-// itself to pieces every time anyone opened the secondaries, which it
-// conspicuously did not.
+// There are two scales and the pump uses a third. RESEARCH octane is measured
+// at 600 rpm and light load; MOTOR octane at 900 rpm with a heated intake, and
+// is always the harsher number. An American pump advertises their average,
+// which is why the same fuel is 87 in Michigan and 91 in Milan.
 //
-// The integral is not wrong; the threshold is borrowed. Douaud and Eyzat fitted
-// that leading constant of 17.68 on a CFR engine — a single-cylinder laboratory
-// instrument with a variable head, a chamber nothing like a 1968 Ford wedge,
-// and a thermal environment nothing like a cast-iron V8 at full load. The
-// value "1" means autoignition in THAT engine. Carried to another chamber
-// without being re-fitted, the correlation keeps its shape and loses its
-// calibration, and comes out several times pessimistic.
-//
-// Two of those times are this project's own doing and are worth naming. The
-// engine here makes about ten percent more power than the real one and runs
-// correspondingly higher peak pressures, and τ goes as p^−1.7, so a sixty-bar
-// peak where the real engine saw fifty is on its own worth a factor of 1.6.
-// And the end gas is treated as isentropic from inlet valve closing with no
-// heat lost to the chamber walls it is pressed against, which makes it hotter
-// than it is, inside an exponential.
-//
-// The temptation is to divide by 4.8 and call the stock engine 1.0. That would
-// be fitting the model to flatter itself, which is the one thing house rule
-// two exists to forbid, and it would destroy the only thing this file is
-// actually good for. So the constant stays as Douaud and Eyzat published it
-// and the number is reported raw.
-//
-// Read it as an INDEX, not a verdict. It cannot tell you whether this engine
-// knocks. It can tell you, reliably and with the right sensitivities, that
-// this engine knocks MORE at 1500 rpm than at 4500 because the end gas has
-// more milliseconds to sit there cooking; more on 87 octane than on 94; more
-// at eleven to one than at nine and a half; and a great deal more with sixteen
-// extra degrees of advance wound into it. Those are the questions compression
-// ratio and spark advance are actually chosen by, and they are comparisons.
-//
-// ── One thing worth knowing about octane numbers ──────────────────────────
-//
-// There are two scales and the pump uses a third. RESEARCH octane (RON) is
-// measured at 600 rpm and light load; MOTOR octane (MON) at 900 rpm with a
-// heated intake, and is always the lower and harsher number. An American pump
-// advertises the average of the two, (R+M)/2, called AKI, which is why the
-// same fuel is 87 in Michigan and 91 in Milan.
-//
-// Douaud and Eyzat fitted against RON, so RON is what this file wants, and
-// handing it an AKI figure will make the fuel look about four points worse
-// than it is and the engine detonate on paper when it never did in a car.
+// Douaud and Eyzat fitted against RON, so RON is what this file wants. Hand it
+// a pump figure and the fuel looks four points worse than it is, and the
+// engine detonates on paper when it never did in a car.
 
 #pragma once
 

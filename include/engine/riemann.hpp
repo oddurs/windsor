@@ -99,9 +99,6 @@ public:
         return std::sqrt(gamma * q.pressure / q.density);
     }
 
-    static double temperature(const Primitive& q) {
-        return q.pressure / (q.density * air::R);
-    }
 
     // Flux of mass, momentum and energy past a station in the gas.
     static Conserved flux(const Primitive& q) {
@@ -163,9 +160,6 @@ public:
         , cell_(static_cast<std::size_t>(cells) + 2, Gas::conserved(fill))
     {}
 
-    std::size_t cells() const { return cell_.size() - 2; }
-    double      dx()    const { return dx_; }
-
     Primitive at(std::size_t i) const { return Gas::primitive(cell_[i + 1]); }
     void      set(std::size_t i, const Primitive& q) { cell_[i + 1] = Gas::conserved(q); }
 
@@ -178,40 +172,7 @@ public:
     Primitive left_face()  const { return Gas::primitive(cell_[1]); }
     Primitive right_face() const { return Gas::primitive(cell_[cell_.size() - 2]); }
 
-    // What actually crossed the two ends on the last step. A junction is built
-    // out of these: whatever left one pipe has to arrive somewhere.
-    Conserved entering() const { return flux_.empty() ? Conserved{} : flux_.front(); }
-    Conserved leaving () const { return flux_.empty() ? Conserved{} : flux_.back();  }
 
-    // Put gas into the first cell: the three fluxes a valve delivers.
-    //
-    //      mass       ṁ
-    //      momentum   ṁ·u
-    //      energy     ṁ·h₀        stagnation enthalpy, which already
-    //                             includes the flow work
-    //
-    // The momentum term is not optional and leaving it out is not a small
-    // error. A valve discharges a jet — during blowdown it is moving faster
-    // than sound — and nearly all of the energy arriving is kinetic. Add the
-    // mass and the enthalpy without the momentum and the solver, computing
-    // pressure from what is left after subtracting ½ρu², finds there is no u
-    // to subtract and puts the entire stagnation enthalpy into static
-    // pressure. The pipe then presents the cylinder with its own total
-    // pressure as backpressure, the engine spends the exhaust stroke pushing
-    // against it, and twenty-three percent of the power quietly disappears.
-    // Negative mass is not a mistake here: during valve overlap the cylinder
-    // draws gas back OUT of its own exhaust port, and a model that only ever
-    // adds will never show it.
-    void inject(double mass, double velocity, double enthalpy, double area) {
-        if (area <= 0.0) return;
-        const double volume = area * dx_;
-        const double keep   = (mass < 0.0)
-                            ? std::max(mass, -0.25 * cell_[1].mass * volume)
-                            : mass;
-        cell_[1].mass     = std::max(cell_[1].mass + keep / volume, 1e-4);
-        cell_[1].momentum += keep * velocity / volume;
-        cell_[1].energy   = std::max(cell_[1].energy + keep * enthalpy / volume, 1e2);
-    }
 
     // The largest step the Courant condition allows: a signal must not cross
     // more than one cell in one step, or the scheme is solving a problem in

@@ -1,83 +1,55 @@
 // induction.hpp — the throttle, and the vacuum behind it.
 //
 // A petrol engine is controlled by making it difficult to breathe. That is the
-// whole mechanism. There is no other lever: the throttle does not add fuel, it
-// does not change the timing, it does not alter the compression. It closes a
-// plate across the only path air has into the engine, and everything else
-// follows from the pressure that collapses behind it.
+// whole mechanism. The throttle adds no fuel, changes no timing, alters no
+// compression. It closes a plate across the only path air has in, and
+// everything else follows from the pressure that collapses behind it.
 //
-// This is a spectacularly wasteful way to control an engine and it has never
-// been replaced. At light load the manifold sits at a third of an atmosphere
-// and every intake stroke is the piston pulling a partial vacuum against
-// atmospheric pressure on its underside — the pumping loop, a negative area on
-// the indicator card that is subtracted from every cycle whether it fired or
-// not. Cruising down a motorway, a large engine spends more energy breathing
-// than a small one spends moving the car. Diesels do not do this; they throttle
-// on fuel alone and their manifolds sit at atmosphere, which is most of why
-// they are more efficient at part load and nearly none of why they are more
-// efficient at full.
+// This is a spectacularly wasteful way to run an engine and it has never been
+// replaced. At light load the manifold sits at a third of an atmosphere and
+// every intake stroke is the piston pulling against a vacuum it made itself —
+// the pumping loop, a negative area on the indicator card subtracted from
+// every cycle whether it fired or not. Cruising, a large engine spends more
+// energy breathing than a small one spends moving the car. A diesel throttles
+// on fuel alone and its manifold sits at atmosphere, which is most of why it
+// is more efficient at part load and nearly none of why it is at full.
 //
 // ── What manifold vacuum is for ───────────────────────────────────────────
 //
 // The depression behind the plate is not merely a symptom. Before there were
-// sensors it was the engine's only broadcast signal, and an extraordinary
-// amount of machinery was built to listen to it: the vacuum advance on the
-// distributor, which read light load and gave the slow lean mixture more time
-// to burn; the power valve in the carburettor, which read the vacuum
-// collapsing under acceleration and dumped in extra fuel; the brake booster;
-// the heater controls; the transmission modulator. An engine with a vacuum
-// leak misbehaves in a dozen unrelated ways at once because a dozen unrelated
-// systems were all listening to the same pipe.
+// sensors it was the engine's only broadcast signal, and a remarkable amount
+// of machinery was built to listen to it: the vacuum advance, which read light
+// load and gave a slow lean mixture more time to burn; the power valve, which
+// read the vacuum collapsing under acceleration and dumped in extra fuel; the
+// brake booster; the heater controls; the transmission modulator. An engine
+// with a vacuum leak misbehaves in a dozen unrelated ways at once because a
+// dozen unrelated systems were all listening to the same pipe.
 //
 // ── The model ─────────────────────────────────────────────────────────────
 //
-// A butterfly, and a plenum behind it with a mass and a temperature of its
-// own. Air enters through the plate from the atmosphere and leaves through
-// eight intake ports on a schedule set by the camshaft, and the plenum
-// pressure is whatever those two disagree by. That disagreement is manifold
-// vacuum, and because the plenum has real volume it has real lag, which is
-// why an engine takes a moment to answer the throttle.
+// A butterfly, a venturi that cannot be opened, and a plenum behind them with
+// a mass and a temperature of its own. Air enters through the plate and leaves
+// through eight ports on a schedule set by the camshaft, and the plenum
+// pressure is whatever those two disagree by. Because the plenum has real
+// volume it has real lag, which is why an engine takes a moment to answer.
 //
 // ── Not modelled: the runners ─────────────────────────────────────────────
 //
-// The plenum here is one well-stirred volume, and every cylinder drinks from
-// it directly. In the engine there is a foot of cast iron between the two, and
-// the column of air standing in it has mass and a resonance of its own. Slow
-// the flow down near the end of the intake stroke and that column keeps coming
+// Every cylinder drinks straight from the plenum here. In the engine there is
+// a foot of cast iron between the two, and the column of air in it has mass.
+// Slow the flow near the end of the intake stroke and that column keeps coming
 // anyway, packing charge in after the piston has stopped helping — which is
-// why the inlet valve is left open 70° past bottom dead centre, and why a
-// tunnel ram is tall.
+// why the inlet valve is left open 70° past bottom dead centre.
 //
-// It was built twice and neither version shipped, which is worth writing down
-// properly because the measurements are the useful part.
+// It was built twice. As a waveguide it tuned correctly and put peak torque at
+// 2486 rpm against Ford's 2400, the closest this model has come, and could not
+// be held below 2000 rpm at any damping. As an inertance and a port compliance
+// — a Helmholtz resonator, which is what a runner is — it was perfectly stable
+// and moved the torque peak the wrong way. Both cost four times the runtime.
 //
-// AS A WAVEGUIDE — two delay lines per runner, an inverting reflection at the
-// plenum where the area opens out, the same machinery the exhaust primaries
-// use. It worked, and it tuned in the right direction: longer runners helped
-// 2500 to 4500 rpm and hurt 5500, exactly the trade a manifold makes. It moved
-// peak torque to 306 lb-ft at 2486 rpm against Ford's 295 at 2400, which is
-// the closest this model has ever come. And it could not be held below 2000
-// rpm at any damping: the loop rang and the torque swung between 137 and 465
-// Nm in a limit cycle seventeen cycles long.
-//
-// AS AN INERTANCE — dropping the resonance and keeping only the mass, which
-// for a runner this short is the larger effect anyway. Written as
-// p = p_plenum − Λ·dṁ/dt it is an algebraic loop, since the ṁ being
-// differentiated is the flow the cylinder computes FROM the pressure being
-// solved for, and it produced NaN in under a second. Written properly — the
-// runner flow as a state pushed by the pressure difference, a small port
-// volume as a compliance, which together are a Helmholtz resonator and are
-// what a runner actually is — it integrated stably at 1500 and 4000 rpm with
-// no cycle-to-cycle variation at all. But it moved peak torque DOWN to 1484
-// rpm, away from the 2400 it was meant to be chasing.
-//
-// So: one version that was accurate and unstable, one that was stable and less
-// accurate than having no runners at all, and four times the runtime for
-// either. Neither is worth what it costs yet. What is missing in both is that
-// the eight runners should meet each other AT the plenum and share it —
-// a proper junction, as the exhaust primaries have at their collector — rather
-// than each seeing a private boundary condition. That is probably the whole
-// difference, and it is the next thing to try.
+// What neither did was let the eight runners MEET at the plenum, the way the
+// primaries meet at their collector; each saw a private boundary instead. That
+// is probably the whole difference, and it is the next thing to try.
 
 #pragma once
 

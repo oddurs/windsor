@@ -123,10 +123,6 @@ public:
     double knock_severity()    const { return knock_.severity(); }
     double trapped_air()       const { return trapped_mass_; }
 
-    // Work delivered to the piston over the last completed cycle, by integrating
-    // p·dV. This is the indicated work, before a single bearing has taken its
-    // cut, and it is the honest measure of what the thermodynamics achieved.
-    double indicated_work() const { return last_cycle_work_; }
 
     // ── The step ──────────────────────────────────────────────────────────
     // engine_theta  — the whole engine's crank angle, [0, 720°)
@@ -271,7 +267,6 @@ public:
             -s_.reciprocating_mass * s_.geometry.piston_acceleration(theta, omega)
              * dVdth / s_.geometry.piston_area();
 
-        accumulate_work(p, dVdth, dtheta, theta);
 
         return Indication{
             gas_torque + inertia_torque,
@@ -317,17 +312,6 @@ private:
         }
     }
 
-    // ∮p dV over one cycle. Reset each time the cylinder comes round to its
-    // own firing TDC, so the figure reported is always a complete revolution
-    // of the four-stroke and never half of one.
-    void accumulate_work(double p, double dVdth, double dtheta, double theta) {
-        if (theta < last_theta_) {                 // wrapped past 720° → 0°
-            last_cycle_work_ = work_accumulator_;
-            work_accumulator_ = 0.0;
-        }
-        work_accumulator_ += p * dVdth * dtheta;
-        last_theta_ = theta;
-    }
 
     Setup  s_;
     Wiebe  burning_;          // this cycle's burn, paced by this cycle's mixture
@@ -342,9 +326,6 @@ private:
     bool   ignited_          = false;
     Knock::Account knock_{};
 
-    double work_accumulator_ = 0.0;
-    double last_cycle_work_  = 0.0;
-    double last_theta_       = 0.0;
 };
 
 } // namespace engine

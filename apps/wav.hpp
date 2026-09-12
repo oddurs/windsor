@@ -21,7 +21,7 @@
 
 namespace wav {
 
-// Signed 16-bit PCM, one or two channels.
+// Signed 16-bit PCM, stereo.
 //
 // Both channels are normalised by the SAME factor. Scaling them independently
 // would make each one as loud as it could be and destroy the only thing a
@@ -31,9 +31,8 @@ inline bool write(const char* path,
                   std::span<const double> right,
                   int sample_rate)
 {
-    const bool stereo   = !right.empty();
-    const int  channels = stereo ? 2 : 1;
-    const std::size_t frames = stereo ? std::min(left.size(), right.size()) : left.size();
+    constexpr int channels = 2;
+    const std::size_t frames = std::min(left.size(), right.size());
 
     double peak = 0.0;
     for (double s : left)  peak = std::max(peak, std::abs(s));
@@ -41,10 +40,8 @@ inline bool write(const char* path,
     if (peak <= 0.0) peak = 1.0;
     const double gain = 0.89 * 32767.0 / peak;
 
-    const std::uint32_t data_bytes =
-        static_cast<std::uint32_t>(frames * std::size_t(channels) * 2);
-    const std::uint32_t byte_rate =
-        static_cast<std::uint32_t>(sample_rate) * std::uint32_t(channels) * 2;
+    const std::uint32_t data_bytes = static_cast<std::uint32_t>(frames * 4);
+    const std::uint32_t byte_rate  = static_cast<std::uint32_t>(sample_rate) * 4;
 
     std::FILE* f = std::fopen(path, "wb");
     if (!f) return false;
@@ -56,10 +53,10 @@ inline bool write(const char* path,
     tag("RIFF");  u32(36 + data_bytes);  tag("WAVE");
     tag("fmt ");  u32(16);
     u16(1);                                   // PCM, uncompressed
-    u16(static_cast<std::uint16_t>(channels));
+    u16(channels);
     u32(static_cast<std::uint32_t>(sample_rate));
     u32(byte_rate);
-    u16(static_cast<std::uint16_t>(channels * 2));   // block align
+    u16(channels * 2);                               // block align
     u16(16);                                         // bits per sample
     tag("data");  u32(data_bytes);
 
@@ -68,19 +65,15 @@ inline bool write(const char* path,
     };
 
     std::vector<std::int16_t> pcm;
-    pcm.reserve(frames * std::size_t(channels));
+    pcm.reserve(frames * 2);
     for (std::size_t i = 0; i < frames; ++i) {
         pcm.push_back(quantise(left[i]));
-        if (stereo) pcm.push_back(quantise(right[i]));
+        pcm.push_back(quantise(right[i]));
     }
 
     std::fwrite(pcm.data(), 2, pcm.size(), f);
     std::fclose(f);
     return true;
-}
-
-inline bool write(const char* path, std::span<const double> mono, int sample_rate) {
-    return write(path, mono, {}, sample_rate);
 }
 
 } // namespace wav

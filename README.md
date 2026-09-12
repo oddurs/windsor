@@ -104,115 +104,88 @@ forging** — which is exactly what Ford did — and the order becomes
 ./windsor verify
 ```
 
-Sixty-one checks, in a couple of seconds, every one of them against something
-outside the project — a derivative against finite differences, a burn rate
-against its own integral, a cylinder head against a flow bench, a firing order
-against the casting, and the thesis against a Fourier transform.
+Sixty-three checks in a couple of seconds, every one against something outside
+the project: a derivative against finite differences, a burn rate against its
+own integral, a cylinder head against a flow bench, a firing order against the
+casting, a shock tube against its exact solution, and the thesis against a
+Fourier transform. Nothing in the model was fitted to any of it.
 
-Nothing in the model was fitted to any of it. A selection:
+**The cylinder head, against a flow bench.** Curtain area, a discharge
+coefficient, a throat cap. How fast that coefficient sags past its peak is the
+only number in the port model fitted to anything, and this is what it is fitted
+to:
 
-**The cylinder head, against a flow bench.** The port model is curtain area, a
-discharge coefficient and a throat cap. The sag of that coefficient past its
-peak is the one number in it fitted to anything, and it is fitted to this:
+| lift                      | model     | published, stock C8OE-F |
+| ------------------------- | --------- | ----------------------- |
+| 0.400 in                  | 153.5 cfm | ~150 cfm                |
+| 0.426 in (the cam's peak) | 149.9 cfm | —                       |
 
-| lift                      | model     | published, stock C8OE-F castings |
-| ------------------------- | --------- | -------------------------------- |
-| 0.400 in                  | 153.5 cfm | ~150 cfm                         |
-| 0.426 in (the cam's peak) | 149.9 cfm | —                                |
-
-**The engine, against Ford.** `./windsor dyno`:
+**The engine, against Ford.**
 
 |             | model            | Ford, 1968 302-2V (gross) |
 | ----------- | ---------------- | ------------------------- |
 | peak torque | 306 lb-ft @ 1985 | 295 lb-ft @ 2400          |
 | peak power  | 206 hp @ 4994    | 210 hp @ 4400             |
 
-Within four percent on torque and two on power, with no fitting anywhere. The
-magnitudes are close; the shape is still too flat. Torque peaks about 400 rpm
-low and power about 600 rpm high, so the model's curve is broader than the real
-engine's — which is the intake runner tuning that is still missing.
+Within four percent and two, with nothing fitted. The magnitudes are close and
+the curve is too broad — torque peaks 400 rpm low, power 600 high — which is the
+intake runner tuning still missing. It was ten percent optimistic with the power
+peak a thousand rpm high until the carburettor's venturis went in: a two-barrel
+engine breathes through a hole that cannot be opened.
 
-It was ten percent optimistic with the power peak a thousand rpm too high until
-the carburettor's venturis went in — a two-barrel engine breathes through a hole
-that cannot be opened, and that hole is most of why the 2V made its power at
-4400 where the otherwise identical 4V made more of it at 4800.
-
-**The indicator card.** At 3000 rpm, wide open: peak pressure 55 bar at 13°
-after top dead centre, 50% mass burned at 8° ATDC, 2945 K. Which is what a
-pressure trace off a 1968 wedge chamber looks like.
-
-**The pumping loss, drawn.** `./windsor card` puts Watt's indicator diagram on
-the terminal — the same cylinder at the same speed, wide open and throttled,
-to the same scale. Throttled, the intake stroke sinks to 0.2 bar while the
-exhaust stroke sits at 1.5, and the anticlockwise loop that opens between them
-is work the engine spends on breathing:
+**The indicator card.** `./windsor card` draws Watt's diagram, wide open and
+throttled, to the same scale. At 3000 rpm the trace peaks at 64 bar, 9.5° after
+top dead centre — late enough to use the crank's leverage, early enough that the
+end gas has not gone off by itself. Throttled:
 
 | at 2000 rpm | gross     | pumping       | net       |
 | ----------- | --------- | ------------- | --------- |
 | wide open   | 11.94 bar | −0.07 bar     | 11.87 bar |
 | throttled   | 0.98 bar  | **−0.93 bar** | 0.05 bar  |
 
-Ninety-five percent of everything it makes, spent on suffocating itself. That
-is the price of controlling a petrol engine with a plate across its throat,
-and it is most of why a diesel is more efficient at part load and barely more
-efficient at full.
+Ninety-five percent of everything it makes, spent on suffocating itself.
 
-**The fuel, which is what stops the engine.** The Livengood–Wu integral over
-Douaud–Eyzat ignition delay: the end gas spends a fraction `dt/τ` of its
-patience each instant, and detonates when the account reaches 1. It reports an
-index rather than a verdict — the threshold of 1 belongs to the CFR engine the
-correlation was fitted on, and this model runs about five times pessimistic on
-a Ford wedge, for reasons `knock.hpp` names rather than divides out. What it
-gets right are the comparisons, which is what compression ratio and spark
-advance are actually chosen by: knock worsens at low rpm, with advance, with
-compression, with cheaper fuel, and eases on a rich mixture.
-
-Which makes three numbers that were arbitrary into one decision that has to
-agree with itself: 9.5:1, 34° of total advance, and what was in the tank in 1968.
+**The fuel, which is what stops the engine.** Livengood–Wu over Douaud–Eyzat:
+the end gas spends `dt/τ` of its patience each instant and goes off when the
+account reaches one. It reports an index and not a verdict — the threshold
+belongs to the CFR engine the correlation was fitted on — but the comparisons
+are what compression ratio and advance are actually chosen by, and they all come
+out right. Knock worsens at low rpm, with advance, with compression, with
+cheaper fuel, and eases on a rich mixture. Which makes 9.5:1, 34° of advance and
+what was in the tank in 1968 one decision instead of three.
 
 **The balance, which is why the crank exists.** The same rod table, asked a
-different question — `balance.hpp` resolves each piston's inertia force along
-its own bore axis and Fourier-transforms the sum over a revolution:
+different question:
 
-| at 3000 rpm         | cross-plane                       | flat-plane                    |
-| ------------------- | --------------------------------- | ----------------------------- |
-| primary force       | 0 N                               | 0 N                           |
-| **secondary force** | **0 N**                           | **5000 N**                    |
-| what it traces      | a circle — counterweights take it | a line — nothing can touch it |
+| at 3000 rpm         | cross-plane                       | flat-plane           |
+| ------------------- | --------------------------------- | -------------------- |
+| primary force       | 0 N                               | 0 N                  |
+| **secondary force** | **0 N**                           | **5000 N**           |
+| what it traces      | a circle — counterweights take it | a line — nothing can |
 
-Half a tonne, a hundred times a second, and no counterweight on a shaft
-turning at ω can oppose a force that goes at 2ω. The flat crank sounds better
-and shakes. That is the bill for the noise, and it is why almost nobody pays it.
+Half a tonne, a hundred times a second, and nothing bolted to a shaft turning at
+ω can oppose a force that goes at 2ω. The flat crank sounds better and shakes.
+That is the bill for the noise, and why almost nobody pays it.
 
-**The recording itself.** `./windsor record` writes stereo, because a V8 does
-not have an exhaust — it has two, one per bank, down opposite sides of the car,
-permanently out of step with each other on a cross-plane crank. There are two
-microphones 0.6 m apart, 1.5 m behind two tailpipes 1.0 m apart, and each one
-hears both pipes: quieter by the extra distance, later by the time sound takes
-to cross the gap. Nothing is widened or panned. The stereo image is the
-geometry, and moving the microphones moves it.
-
-Mono-summing the banks recombines them toward an even train and cancels much of
-the unevenness — real, and why people argue about H-pipes, but it throws away
-the evidence. In stereo the two pulse trains stay apart where you can hear them
-disagree.
-
-**The sound, against itself.** The whole point. Half-order energy against
-whole-order energy at idle — half-orders being the signature of a pulse train
-that repeats every *two* revolutions instead of one:
+**The sound, against itself.** Half-order energy against whole-order energy at
+idle, half-orders being the signature of a train that repeats every *two*
+revolutions instead of one:
 
 |                | cross-plane | flat-plane |      |
 | -------------- | ----------- | ---------- | ---- |
 | one bank alone | **0.42**    | **0.0010** | 404× |
 
-Ninety-six percent of the energy sits below 90 Hz — the rate a single bank
-fires at, and the half-orders packed around it, which is where the burble lives
-— and nothing measurable at all above 1.4 kHz. Which is what a V8 idle looks
-like on an analyser.
+Ninety-six percent of the energy sits below 90 Hz, where the burble lives, and
+nothing measurable above 1.4 kHz.
 
-Summing two banks recombines them toward an even train and cancels much of the
-unevenness, which is why people have argued about H-pipes and true duals for
-sixty years.
+`./windsor record` writes stereo, because a V8 does not have an exhaust — it has
+two, down opposite sides of the car, permanently out of step on a cross-plane
+crank. Two microphones 0.6 m apart, 1.5 m behind two tailpipes 1.0 m apart, each
+hearing both pipes: quieter by the extra distance, later by the time sound takes
+to cross the gap. Nothing is widened or panned; the image is the geometry, and
+moving the microphones moves it. Summing to mono recombines the banks toward an
+even train and cancels much of the unevenness — real, and why people have argued
+about H-pipes for sixty years, but it throws the evidence away.
 
 ---
 
@@ -289,45 +262,35 @@ fifth more thermal efficiency than any engine can deliver.
 
 ## What it does not model
 
-Stated plainly, because an unstated simplification is a lie and a stated one
-is a design decision. Each of these is named in the file where it bites.
+Stated plainly, because an unstated simplification is a lie and a stated one is
+a design decision. Each is named in the file where it bites.
 
 - **Wrist-pin offset.** Real pistons carry 0.5–1.5 mm toward the thrust side.
   It buys a rattle you cannot hear and costs a closed-form solution.
-- **Intake runner tuning** — built twice, shipped neither, and the measurements
-  are in `induction.hpp`. As a waveguide it tuned correctly and put peak torque
-  at 306 lb-ft / 2486 rpm against Ford's 295 / 2400 — the closest this model
-  has come — and could not be held below 2000 rpm at any damping. As an
-  inertance plus port compliance it was perfectly stable and moved the torque
-  peak the *wrong way*. Both cost 4× the runtime. What neither did was let the
-  eight runners meet each other at the plenum the way the exhaust primaries
-  meet at their collector, and that is probably the whole difference.
-- **Nonlinear gas dynamics** — and this one was built, measured, and reverted,
-  which is the most interesting entry on the list. `riemann.hpp` is a
-  second-order finite-volume Euler solver, verified against Sod's shock tube to
-  one part in 10⁵. Wired into the engine in place of the delay lines it removed
-  the Mach 1 clamp entirely and made header length worth **14% of torque**,
-  peaking at 1.2 m at 4500 rpm where the old builder's rule predicts 1.10 m —
-  against 1.8% and no peak from the waveguide.
 
-  It was reverted anyway. It cost 7× the runtime, and it destroyed the one
-  measurement this project exists to make: the flat-plane bank's half-order
-  share went from 0.02 to 3.8 and the ratio between the two crankshafts
-  collapsed to 1×. An engine that cannot tell the two cranks apart is of no use
-  here however good its shocks are.
+- **Intake runner tuning.** Built twice, shipped neither. As a waveguide it
+  tuned correctly and put peak torque within 90 rpm of Ford's, and could not be
+  held below 2000 rpm at any damping. As a Helmholtz resonator it was perfectly
+  stable and moved the peak the wrong way. Both cost four times the runtime.
+  Neither let the eight runners meet at the plenum the way the primaries meet at
+  their collector, which is probably the whole difference. The measurements are
+  in `induction.hpp`.
 
-  The lesson is worth the whole detour: a delay line has **no** numerical
-  dissipation — it is the exact solution to the linear problem, not an
-  approximation to it — while any finite-volume scheme is diffusive everywhere.
-  For a problem that is mostly linear propagation with occasional violence, the
-  cruder-looking model is the more faithful one over most of the cycle.
+- **Nonlinear gas dynamics.** `riemann.hpp` is a second-order finite-volume
+  Euler solver, verified against Sod's shock tube to one part in 10⁵ and
+  conserving mass and energy to machine precision. Wired in place of the delay
+  lines it removed the Mach 1 clamp and made header length worth 14% of torque —
+  and collapsed the difference between the two crankshafts, which is the one
+  measurement this project exists to make. So it was reverted. A delay line has
+  *no* numerical dissipation: it is the exact solution to the linear problem,
+  not an approximation to it, and for a problem that is mostly linear
+  propagation the cruder-looking model is the more faithful one.
 
-  What survives is the measurement. `./windsor verify` fires a real blowdown
-  front down a primary with no clamp at all and clocks it at **1409 m/s** —
-  Mach 2.4, against 586 m/s for sound in the gas ahead. It is a shock, it
-  outruns its own sound, and it is why the crack of an exhaust is sharper at
-  the tailpipe than at the valve. The shipped model cannot produce that, and
-  now says so with a number instead of an apology.
+  What survives is a measurement. `./windsor verify` clocks a real blowdown
+  front at **1409 m/s** — Mach 2.4, against 586 for sound in the gas ahead of
+  it. It is a shock. The shipped model cannot make one, and now says so with a
+  number instead of an apology.
+
 - **Blow-by, oil temperature, crankshaft torsion, dissociation above 2000 K.**
 
 None of these would change the shape of the project.

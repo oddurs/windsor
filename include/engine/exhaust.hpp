@@ -9,36 +9,32 @@
 // The exhaust system does two unrelated things and this class does both
 // without letting them touch.
 //
-// The first is thermodynamic: it is the far side of the exhaust valve, the
-// `Boundary` a cylinder pushes against, and it has a pressure — backpressure —
-// that the engine must work to overcome and that determines how much burnt gas
-// is left in the chamber to dilute the next charge. That is a plenum with a
-// mass and a temperature, and it is boring and important.
+// The first is thermodynamic. It is the far side of the exhaust valve, the
+// `Boundary` a cylinder pushes against, and it has a backpressure the engine
+// must work to overcome. That is a plenum with a mass and a temperature, and
+// it is dull and important.
 //
 // The second is acoustic, and is the reason anyone cares about V8s.
 //
-// ── Why an exhaust makes a sound at all ───────────────────────────────────
+// ── Why an exhaust makes a sound ──────────────────────────────────────────
 //
 // The valve cracks open with sixty atmospheres behind it. The flow chokes
-// instantly — sonic at the seat, and no downstream condition can make it flow
-// faster — and a near-discontinuity in pressure sets off down the primary pipe
-// at the local speed of sound, which in 900 K exhaust gas is about 590 m/s,
-// nearly twice what it is in the air outside. That step is blowdown, and it is
-// the leading edge of every pulse. What follows it, as the piston comes up the
-// bore and pushes the rest out, is comparatively gentle and contributes the
-// low end.
+// instantly — sonic at the seat, and no downstream condition can make it go
+// faster — and a near-discontinuity in pressure sets off down the primary at
+// the local speed of sound, which in 900 K exhaust gas is about 590 m/s,
+// nearly twice what it is in the air outside. That is blowdown, and it is the
+// leading edge of every pulse. What follows, as the piston pushes the rest
+// out, is gentle by comparison and contributes the low end.
 //
-// So an exhaust note is a train of sharp pulses. Its pitch is the rate the
-// pulses arrive. Its timbre is what the pipes did to them on the way out.
+// So an exhaust note is a train of sharp pulses. Its pitch is the rate they
+// arrive at. Its timbre is what the pipes did to them on the way out.
 //
 // ── The waveguide ─────────────────────────────────────────────────────────
 //
-// Pipes are modelled as digital waveguides: a pressure wave travelling one way
-// is a delay line, and a pipe is two of them, one in each direction. This is
-// not an analogy or a filter that sounds a bit like a pipe. It is the exact
-// solution to the one-dimensional wave equation, sampled — d'Alembert's 1747
-// result, that any solution is the sum of a left-mover and a right-mover, with
-// the sampling done at 44.1 kHz instead of in the continuum.
+// A pipe is two delay lines, one per direction. This is not a filter that
+// sounds a bit like a pipe; it is the exact solution to the one-dimensional
+// wave equation, sampled — d'Alembert's 1747 result that any solution is a
+// left-mover plus a right-mover, taken at 176 kHz instead of in the continuum.
 //
 // Where pipes meet, waves scatter. At a junction of N pipes, continuity of
 // pressure and conservation of volume flow give exactly one answer:
@@ -46,102 +42,59 @@
 //      p_junction = 2·Σ(Yᵢ·pᵢ⁺) / Σ(Yᵢ)        Yᵢ = Aᵢ / (ρc), the admittance
 //      pᵢ⁻ = p_junction − pᵢ⁺
 //
-// and that single expression contains every tuning effect a header has. A wave
-// arriving from a small primary into a large collector sees more area than it
-// came from, and the reflection comes back INVERTED — a rarefaction, running
-// back up the pipe toward the cylinder it came from. Time that returning
-// suction to arrive at the exhaust valve during overlap and it will reach into
-// the chamber and pull the residuals out and the next charge in. That is
-// scavenging; it is worth real power over a narrow band; and it is the entire
-// reason a set of headers has a length, and why that length is chosen for an
-// rpm rather than for the engine.
+// and that expression contains every tuning effect a header has. A wave
+// arriving from a narrow primary into a wide collector finds more room than it
+// came from, and the reflection it sends home is INVERTED — a rarefaction,
+// running back toward the cylinder that made it. Time that to arrive during
+// overlap and it reaches into the chamber, pulls the residuals out and the
+// next charge in. That is scavenging. It is why a set of headers has a length,
+// and why the length is chosen for an engine speed rather than for an engine.
 //
-// At the open end of the tailpipe the wave meets infinite area and reflects
-// almost perfectly inverted, which is why an exhaust pipe has a resonant note
-// of its own — an organ pipe, stopped at one end by a cylinder head.
+// At the open end the wave meets infinite area and reflects almost perfectly
+// inverted, which is why a tailpipe has a note of its own: an organ pipe,
+// stopped at one end by a cylinder head.
 //
-// ── The loop, closed ──────────────────────────────────────────────────────
+// ── The loop is closed ────────────────────────────────────────────────────
 //
-// The waveguide does not merely listen to the exhaust ports. It is what they
-// push against.
+// The waveguide does not merely listen to the ports. It is what they push
+// against: each cylinder's exhaust `Boundary` is the pressure at the closed
+// end of its own primary — the collector's mean, plus whatever wave is
+// standing at that valve at that instant. A cylinder blowing down sends a wave
+// away, the junction sends part of it back inverted, and the cylinder that is
+// by then on overlap breathes better or worse for it.
 //
-// Each cylinder's exhaust `Boundary` is the pressure at the closed end of its
-// own primary pipe — the slowly-varying mean backpressure of the collector,
-// plus whatever wave happens to be standing at that valve at that instant. So
-// a cylinder blowing down sends a wave away down its pipe, the junction sends
-// part of it back inverted, and when it arrives the cylinder that is by then
-// on its overlap feels it, and breathes better or worse for it.
-//
-// This costs more than it looks. The cylinder solution and the gas dynamics
-// have to be integrated together, the waveguide has to run fast enough that
-// the crank cannot step over it at 6000 rpm, and a mass flow has to be
-// converted into a travelling wave with the right magnitude rather than an
-// arbitrary one:
-//
-//      p⁺ = ρ·c·u = ρ·c·(ṁ / ρA) = c·ṁ / A
-//
-// — where the density cancels, which is the small piece of luck that makes
-// this tractable.
+// A mass flow becomes a travelling wave of p⁺ = ρcu, where u = ṁ/ρA and the
+// density cancels — the small piece of luck that makes this tractable.
 //
 // ── The clamp, and what it costs ──────────────────────────────────────────
 //
-// One limit has to be respected or the whole thing detonates. A plane wave
-// cannot carry particle velocity faster than sound — past Mach 1 what is
-// leaving the valve is a jet, not a wave, and its surplus momentum is spent
-// stirring the pipe rather than travelling down it. A linear waveguide has no
-// way to become a shock, so left unbounded it will happily report thirty-five
-// bar in a header that has never seen three, the cylinder will find it cannot
-// exhale against its own exhaust, and the engine will make negative power with
-// complete confidence. It did exactly that, once.
-//
-// So u is clamped at the local speed of sound, capping the source at ρc² = γp̄
-// — about 1.8 bar over a mean of 1.3, which is what a primary pipe actually
-// sees at blowdown.
+// One limit cannot be skipped. A plane wave cannot carry particle velocity
+// faster than sound; past Mach 1 what leaves the valve is a jet, not a wave.
+// A linear waveguide has no way to become a shock, so left unbounded it
+// reports thirty-five bar in a header that has never seen three, the cylinder
+// finds it cannot exhale against its own exhaust, and the engine makes
+// negative power with complete confidence. So u is clamped at the local sound
+// speed, capping the source at ρc² = γp̄ — about 1.8 bar over a mean of 1.3,
+// which is what a primary actually sees.
 //
 // That clamp is the honest boundary of a linear model, and `riemann.hpp` is
-// what it costs, measured rather than asserted. Run `windsor verify`: a real
-// blowdown front, solved without any clamp at all, travels down a primary at
-// 1409 m/s — Mach 2.4, against 586 m/s for sound in the gas ahead of it. It is
-// a shock. It outruns its own sound because its crest is hotter than the gas
-// in front and is carried forward by the flow behind, and that is why the
-// crack of an exhaust is sharper at the tailpipe than it was at the valve.
+// what it costs, measured rather than asserted. `windsor verify` sends a real
+// blowdown front down a primary with no clamp at all and clocks it at
+// 1409 m/s — Mach 2.4, against 586 for sound in the gas ahead. It is a shock.
+// It outruns its own sound because its crest is hotter than the gas in front
+// and is carried forward by the flow behind, and that is why the crack of an
+// exhaust is sharper at the tailpipe than it was at the valve.
 //
-// Nothing in this file can produce that. Two delay lines propagate at exactly
-// one speed, forever, which is what makes them exact for a linear wave and
-// wrong for this one.
-//
-// ── And why it is still the model that ships ──────────────────────────────
-//
-// The nonlinear solver was built, verified against Sod's shock tube to one
-// part in a hundred thousand, and wired into this engine in place of the delay
-// lines. It worked. Pipe pressures came out physically correct without a clamp
-// anywhere, and header length finally became worth something real — 14% of
-// torque across a length scan, peaking at 1.2 m at 4500 rpm where the old
-// builder's rule of thumb predicts 1.10 m, against 1.8% and no peak at all
-// from the delay lines.
-//
-// It was reverted anyway, for two reasons and a lesson.
-//
-// It cost seven times the runtime. And it destroyed the one measurement this
-// entire project exists to make: the flat-plane bank's half-order share, which
-// ought to be nearly nothing, went from 0.02 to 3.8, and the ratio between the
-// two crankshafts collapsed to 1 — from 118 as the model stood that day, and
-// from 26 as it stands now that the radiation is modelled properly, but the
-// number that matters is the 1. Somewhere in the coupled pipes the
-// scheme manufactures cycle-to-cycle variation that an evenly-firing bank does
-// not have, and an engine that cannot tell the two crankshafts apart is of no
-// use here however good its shocks are.
-//
-// The lesson is the interesting part. A delay line has NO numerical
-// dissipation — it is the exact solution to the linear problem, not an
-// approximation to it. A finite-volume scheme, however carefully limited, is
-// diffusive everywhere. For a problem that is mostly linear propagation with
-// occasional violence, the cruder-looking model is the more faithful one over
-// most of the cycle, and the first-order version of the "better" solver was
-// measurably WORSE at header tuning than the delay lines it replaced.
-//
-// That is not an argument against ever doing it properly. It is a record of
-// what was tried, what it bought, and what it broke.
+// Nothing here can produce that. Two delay lines propagate at one speed
+// forever, which is what makes them exact for a linear wave and wrong for
+// this one. The nonlinear solver was built, verified against Sod's shock tube
+// to one part in a hundred thousand, and wired in here in place of the delay
+// lines. It cost seven times the runtime and collapsed the difference between
+// the two crankshafts — the measurement this whole project exists to make —
+// from 118 to 1. It was reverted. A delay line has no numerical dissipation:
+// it is the exact solution to the linear problem, not an approximation to it,
+// and for a problem that is mostly linear propagation with occasional violence
+// the cruder-looking model is the more faithful one.
 
 #pragma once
 
@@ -190,20 +143,13 @@ public:
     explicit DelayLine(std::size_t samples)
         : buffer_(std::max<std::size_t>(samples, 1), 0.0) {}
 
-    // A pipe is not a perfect conductor of sound. Against the wall there is a
-    // boundary layer a fraction of a millimetre thick where the gas is held
-    // still by viscosity and held at the wall's temperature by conduction, and
-    // every pass down the pipe leaves some of the wave in it. The loss grows
-    // as the square root of frequency, so a pipe is a lowpass filter made of
-    // steel — which is why a long system sounds darker than a short one, why a
-    // megaphone is bright and a two-chamber muffler is not, and why standing
-    // behind open headers is unpleasant in a way that standing behind a car is
-    // not.
-    //
-    // Without this the model delivers the sharp edge of every blowdown to the
-    // tailpipe undiminished, the radiation shelf above passes all of it, and
-    // the result is 12 dB of hiss at 1.8 kHz standing over the firing
-    // frequency. It sounded, accurately, like a hairdryer.
+    // Against the wall is a boundary layer a fraction of a millimetre thick,
+    // where viscosity holds the gas still and conduction holds it at the
+    // wall's temperature, and every pass leaves some of the wave in it. The
+    // loss grows as the square root of frequency, so a pipe is a lowpass
+    // filter made of steel. It is why a long system sounds darker than a short
+    // one, and why standing behind open headers is unpleasant in a way that
+    // standing behind a car is not.
     void absorbs_above(double hertz, double rate) { loss_.corner(hertz, rate); }
 
     double read() { return loss_(buffer_[index_]); }
@@ -271,27 +217,21 @@ public:
         // ── The silencer ──────────────────────────────────────────────────
         //
         // Every version of this file until now vented the collector straight
-        // at the atmosphere, which is to say the engine has been running open
-        // headers, which is exactly why it sounded like it. An open-header V8
-        // is genuinely unpleasant to stand behind — that is not a modelling
-        // artefact, it is the reason mufflers were invented and the reason
-        // they are required by law.
+        // at the atmosphere, which is to say the engine was running open
+        // headers, which is exactly why it sounded like it.
         //
-        // A real one is a reactive device: a box with baffles and perforated
-        // tubes and one or two reversals, which works by area changes rather
-        // than absorption, and whose transmission loss is a comb of peaks and
-        // troughs determined by chamber lengths. That geometry is not modelled
-        // here. What is modelled is its effect — three poles of transmission
-        // loss above a corner — and this is the one place in the project where
-        // a component is represented by its behaviour instead of its shape.
-        // It is marked as such rather than dressed up.
+        // A real muffler is a reactive device — a box of baffles and reversals
+        // working by area change, whose transmission loss is a comb set by its
+        // chamber lengths. That geometry is not modelled. Its effect is: three
+        // poles of loss above a corner. This is the one place in the project
+        // where a part is represented by its behaviour instead of its shape,
+        // and it is marked as such rather than dressed up.
         //
-        // The corner matters more than it looks because the ear does. A
-        // whistle sitting 35 dB below the firing frequency sounds no quieter
-        // than the firing frequency does, because human hearing is roughly
-        // that much more sensitive at 5 kHz than at 46 Hz. Loudness is not
-        // energy, and a model that is right about energy can still be
-        // unlistenable.
+        // The corner matters more than it looks, because the ear does. A
+        // whistle 35 dB below the firing frequency is not quieter than the
+        // firing frequency — hearing is about that much more sensitive at
+        // 5 kHz than at 46 Hz. Loudness is not energy, and a model can be
+        // right about energy and still be unlistenable.
         if (s_.muffler_cutoff > 0.0) silencer_.corner(s_.muffler_cutoff, rate_);
 
         // Two corners, both of them claims about the world rather than knobs.
@@ -434,36 +374,25 @@ private:
             const double velocity = std::clamp(
                 ramped_[i] / (mean_density_ * primary_area_),
                 -sound_speed_, sound_speed_);
-            // Smoothed, and this is the last artefact of two clocks meeting.
+            // Smoothed, and this is where two clocks stop arguing.
             //
-            // The port flows arrive once per crank step — 16.7 kHz at idle —
-            // and are ramped between arrivals, which sounds like enough and is
-            // not, because the radiation model downstream DIFFERENTIATES. The
-            // derivative of a piecewise-linear ramp is a staircase, so the
-            // interpolation is undone on the way out and the crank's step rate
-            // is printed straight into the audio band, where it aliased and
-            // put nearly a third of the recording's energy at 16 kHz.
+            // Port flows arrive once per crank step — 16.7 kHz at idle — and
+            // ramping between arrivals is not enough, because the radiation
+            // model DIFFERENTIATES, and the derivative of a ramp is a
+            // staircase again. The crank's step rate gets printed straight
+            // into the audio band.
             //
-            // A real exhaust valve event lasts about ten milliseconds and its
-            // fastest genuine feature, blowdown, takes a millisecond or so.
-            // There is nothing physical in a port flow above about three
-            // kilohertz, so what is above three kilohertz is the solver
-            // talking about itself, and it is removed here.
+            // A valve event lasts ten milliseconds and its fastest real
+            // feature takes one. Nothing above three kilohertz in a port flow
+            // is physical; it is the solver talking about itself.
             const double injected = source_[i](mean_density_ * sound_speed_ * velocity);
 
-            // While the valve is open the end of the pipe is not closed — it
-            // is coupled to half a litre of cylinder, and a wave arriving
-            // there is partly swallowed instead of bounced. Only once the
-            // valve is on its seat is this a closed end.
-            //
-            // It has to be a continuous function of the lift, and getting that
-            // wrong is audible. The first version of this switched between the
-            // two values the instant any flow appeared — a jump from 0.96 to
-            // 0.45 in one sample, sixteen times a cycle, inside a resonant
-            // delay loop. A step discontinuity in a loop gain is a click, a
-            // click is broadband, and those clicks were putting over half the
-            // recording's energy above 8 kHz. A valve does not snap open; it
-            // has a lift curve, and the pipe's termination follows it.
+            // Open, the end of the pipe is coupled to half a litre of
+            // cylinder and swallows part of what arrives; shut, it is a closed
+            // end and bounces it. It must follow the lift CONTINUOUSLY. Switch
+            // between the two the instant flow appears and you put a step
+            // discontinuity in a loop gain sixteen times a cycle, which is a
+            // click, and a click is broadband.
             const double reflection = closed_end_reflection
                 + open_[i] * (open_valve_reflection - closed_end_reflection);
             const double outgoing = returning * reflection + injected;
@@ -481,51 +410,36 @@ private:
 
         // ── What actually escapes ─────────────────────────────────────────
         //
-        // An open pipe radiates the RATE OF CHANGE of the volume flow leaving
-        // it, not the flow itself — a pipe blowing steadily makes no sound at
-        // all. So the microphone begins as a differentiator, and that is why
-        // an exhaust note is all edge.
+        // An open pipe radiates the RATE OF CHANGE of what leaves it, not the
+        // amount — a pipe blowing steadily makes no sound at all. So the
+        // listener is a differentiator, which is why an exhaust note is all
+        // edge. But only up to a point, and a differentiator with nothing to
+        // stop it rises at six decibels per octave forever.
         //
-        // But only up to a point, and missing the point is what made the first
-        // version of this file sound like a hairdryer. A differentiator rises
-        // at six decibels per octave FOREVER, and an engine whose output has
-        // been differentiated with nothing to stop it puts three quarters of
-        // its energy above 1.4 kHz, where a real V8 at idle has almost none.
-        //
-        // The physics that stops it: a pipe mouth only radiates like a point
-        // source while it is acoustically small compared to the wavelength —
-        // ka ≪ 1. Once the wavelength is down to the size of the pipe, the
-        // mouth is no longer a point, radiation efficiency stops climbing, and
-        // the response goes flat. The corner sits at
-        //
-        //      f = c / 2πa
-        //
-        // which for a two-and-a-half inch tailpipe, in ambient air rather than
-        // in the hot gas inside, is about 1.7 kHz. Above that the pipe is
-        // simply not getting any better at being a loudspeaker.
+        // What stops it is that a mouth only radiates like a point source
+        // while it is small compared to the wavelength. Past ka ≈ 1 it is no
+        // longer a point, efficiency stops climbing, and the response goes
+        // flat. The corner is f = c/2πa: about 1.7 kHz for a two-and-a-half
+        // inch tailpipe, in the ambient air outside rather than the hot gas
+        // within. Above it the pipe is simply not getting any better at being
+        // a loudspeaker.
         const double leaving  = (1.0 + open_end_reflection) * at_mouth;
         const double radiated = radiation_(leaving - previous_mouth_);
         previous_mouth_ = leaving;
 
         // ── Down to the file's rate ───────────────────────────────────────
         //
-        // The waveguide runs at four times the sample rate of the file, and
-        // everything above half the FILE's rate has to be gone before the
-        // rates are allowed to meet. Anything left folds: it does not vanish,
-        // it reappears at a frequency it never had, and it sounds like a
-        // whistle because that is exactly what it is.
+        // The waveguide runs four times faster than the file it writes, and
+        // everything above half the FILE's rate must be gone before the two
+        // rates meet. What is left does not vanish — it folds, reappearing at
+        // a frequency it never had, which sounds like a whistle because that
+        // is what it is. There was one at 5.3 kHz: the crank steps 16.5
+        // thousand times a second at idle, and its third harmonic folded
+        // straight down onto it.
         //
-        // There was one. The crank steps 16.5 thousand times a second at idle,
-        // that rate is stamped on the port flows, and its third harmonic at
-        // 49 kHz folded straight down to 5.3 kHz and sat there five decibels
-        // under the firing frequency, which is audible and awful.
-        //
-        // The boxcar average that used to be the whole of the filtering here
-        // is a very poor lowpass — barely four decibels down at the frequency
-        // it most needs to stop. Three poles at ten kilohertz put the folding
-        // band forty decibels further down, which is enough, and they cost
-        // nothing that anyone wanted to hear: there is no exhaust note above
-        // ten kilohertz.
+        // Three poles at ten kilohertz, where no exhaust note lives anyway.
+        // A boxcar average is barely four decibels down at the frequency it
+        // most needs to stop.
         decimator_ += antialias_(s_.muffler_cutoff > 0.0 ? silencer_(radiated)
                                                          : radiated);
         if (++decimation_count_ >= oversample) {

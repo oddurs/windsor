@@ -6,7 +6,7 @@ A Ford 302, modelled from first principles in C++23, for no reason.
 make && ./windsor spec
 ```
 
-No dependencies. No build system. No website. It is an engine, and it runs.
+No dependencies. Nothing to configure. No website. It is an engine, and it runs.
 
 ---
 
@@ -25,10 +25,10 @@ But an engine does not exhale through its flywheel. It exhales through two
 exhaust manifolds, and a manifold is not connected to an engine — it is
 connected to *four cylinders*, and it only ever hears those four:
 
-|                                                 | each bank hears           |
-| ----------------------------------------------- | ------------------------- |
-| **cross-plane** (throws at 0°, 90°, 180°, 270°) | 90° — 180° — 270° — 180°  |
-| **flat-plane** (throws at 0°, 180°, 0°, 180°)   | 180° — 180° — 180° — 180° |
+|                                             | each bank hears       |
+| ------------------------------------------- | --------------------- |
+| **cross-plane** (throws at 0, 90, 180, 270) | 90 - 180 - 270 - 180  |
+| **flat-plane** (throws at 0, 180, 0, 180)   | 180 - 180 - 180 - 180 |
 
 That is the entire difference. A cross-plane bank coughs twice in quick
 succession, waits three quarters of a turn, and coughs again — a limping,
@@ -222,8 +222,8 @@ apps/
 ```
 
 The engine is a sealed mechanism that turns and gets hot and knows nothing
-about being observed. The four apps are instruments bolted to it afterward,
-and none of them may reach into the physics to make its own job easier.
+about being observed. The six apps are instruments bolted to it afterward, and
+none of them may reach into the physics to make its own job easier.
 
 Every header opens with prose explaining why the part exists and what it is
 arguing with. They are meant to be read in roughly the order above.
@@ -251,8 +251,9 @@ The exhaust is a **digital waveguide**: a pipe is two delay lines, one per
 direction, which is d'Alembert's 1747 result sampled at 176 kHz rather than in
 the continuum. Junctions scatter by continuity of pressure and conservation of
 volume flow. The loop is closed — each cylinder's exhaust boundary is the
-pressure standing in *its own primary pipe*, so header length changes the
-torque curve and not only the note.
+pressure standing in *its own primary pipe*, so a header has a length that
+matters and not merely a note. Only by about two percent here, for reasons
+under *nonlinear gas dynamics* below.
 
 γ varies with temperature, falling from 1.400 in a cold intake charge to 1.246
 in combustion products. A cycle computed at a constant 1.4 will promise you a

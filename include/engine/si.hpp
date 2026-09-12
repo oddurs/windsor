@@ -16,6 +16,18 @@
 // BTU, all on the same page of the same manual, and every one of those is
 // correct in its own context. The only way to keep the arithmetic in the
 // middle honest is to refuse to let any of them in.
+//
+// Most of the literals below are never used. That is deliberate and it is the
+// one place in this project where the rule against dead code does not apply,
+// because this file is not a call graph — it is a dictionary. It is the
+// statement of what units this engine will and will not accept, and a
+// statement with the inconvenient half left out is not one. They are
+// `consteval`, so an unused one generates nothing at all: it costs a line of
+// text and buys the completeness of the claim.
+//
+// The identity conversions earn their place twice over. `101325.0_Pa` and
+// `101325.0` compile to the same constant, and only one of them tells the
+// next reader what it is.
 
 #pragma once
 

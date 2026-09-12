@@ -157,12 +157,16 @@ Never commit a state that does not build.
 
 ## Layout
 
-    include/engine/     the machine. headers, mostly self-contained.
-    src/                the few things too heavy to be inline.
-    apps/               instruments you bolt onto it: dyno, cluster, tailpipe.
+    include/engine/     the machine. header-only, one part per file.
+    apps/               the instruments you bolt onto it.
     Makefile            `make`. that's it.
 
+There is no src/. Every part of the engine is a header, because every part of
+the engine is small enough to be read in one sitting, and splitting a thing
+that size across two files buys nothing but a place for them to disagree.
+
 The engine knows nothing about output. It is a sealed mechanism that turns and
-gets hot. The three apps are witnesses to it — a dyno on the flywheel, a gauge
-cluster on the sensors, a microphone behind the pipe — and none of them may
+gets hot. The six apps are witnesses to it — a shop manual page, a dyno on the
+flywheel, a gauge cluster on the sensors, an indicator card on the cylinder, a
+microphone behind the pipe, and an inspection sheet — and none of them may
 reach into the physics to make their own job easier.

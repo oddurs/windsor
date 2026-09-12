@@ -90,11 +90,11 @@ int app::spec(int argc, char** argv) {
                 g.mean_piston_speed(6000.0_rpm));
 
     rule("CAMSHAFT");
-    std::printf("  duration (adv.)      %.0f deg in / %.0f deg ex\n",
+    std::printf("  duration, advertised %.0f deg in / %.0f deg ex\n",
                 as::deg(cam.intake().duration()), as::deg(cam.exhaust().duration()));
     std::printf("  lift at the valve    %.3f in / %.3f in\n",
                 as::in(cam.intake().max_lift()), as::in(cam.exhaust().max_lift()));
-    std::printf("  lobe separation      %.0f deg\n", as::deg(cam.lobe_separation_angle()));
+    std::printf("  lobe separation      %.1f deg\n", as::deg(cam.lobe_separation_angle()));
     std::printf("  timing               IVO %.0f BTDC   IVC %.0f ABDC\n",
                 360.0 - as::deg(cam.intake().opens()), as::deg(cam.intake().closes()) - 540.0);
     std::printf("                       EVO %.0f BBDC   EVC %.0f ATDC\n",
@@ -144,7 +144,7 @@ int app::spec(int argc, char** argv) {
     rule("WHAT IT COST TO GET THAT");
     std::printf("  A piston does not travel sinusoidally. Kill the once-per-turn term with\n");
     std::printf("  a counterweight and a twice-per-turn one is still there, and nothing\n");
-    std::printf("  bolted to a shaft turning at w can cancel a force at 2w.\n\n");
+    std::printf("  bolted to a shaft turning at \u03c9 can cancel a force at 2\u03c9.\n\n");
 
     down_the_nose(ck);
 

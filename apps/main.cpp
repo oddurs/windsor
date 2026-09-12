@@ -23,8 +23,8 @@ static int usage() {
     windsor spec        what was built, and what falls out of it
     windsor dyno        put it on a water brake and sweep it
     windsor run         watch it idle
-    windsor record      stand behind it with a microphone
     windsor card        let it draw its own picture, as Watt did
+    windsor record      stand behind it with two microphones
     windsor verify      check every number this project quotes
 
 Options

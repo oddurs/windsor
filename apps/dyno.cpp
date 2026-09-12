@@ -22,7 +22,9 @@
 #include "apps.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <deque>
+#include <string>
 #include <cstdio>
 #include <vector>
 
@@ -134,43 +136,102 @@ Point measure(Engine& e, double target_rpm) {
 }
 
 // Two curves, one axis, drawn the way a dyno sheet draws them.
+//
+// Eleven measured points would be eleven scattered marks, which reads as noise
+// and not as a curve. A dyno sheet is a line, because the engine is continuous
+// between the speeds you happened to stop at. So the marks are interpolated
+// across the width of the plot and each column is joined to the last — the
+// same thing the pen on a strip chart does, and for the same reason.
 void plot(const std::vector<Point>& pts) {
     constexpr int rows = 16;
+    constexpr int cols = 60;
 
     double t_max = 0.0, p_max = 0.0;
     for (const Point& p : pts) {
         t_max = std::max(t_max, as::lbft(p.torque));
         p_max = std::max(p_max, as::hp(p.power));
     }
-    const double t_top = std::ceil(t_max / 50.0) * 50.0;
-    const double p_top = std::ceil(p_max / 50.0) * 50.0;
+    const double t_top = std::ceil(t_max / 25.0) * 25.0;
+    const double p_top = std::ceil(p_max / 25.0) * 25.0;
 
-    const auto row_of = [&](double value, double top) {
-        return std::clamp(static_cast<int>(value / top * rows), 0, rows - 1);
+    const double lo = pts.front().rpm, hi = pts.back().rpm;
+
+    // Read either curve at any speed, not just the ones that were measured.
+    const auto at = [&](double rpm, bool power) {
+        for (std::size_t i = 1; i < pts.size(); ++i) {
+            if (rpm > pts[i].rpm && i + 1 < pts.size()) continue;
+            const Point& a = pts[i - 1];
+            const Point& b = pts[i];
+            const double f = (rpm - a.rpm) / std::max(b.rpm - a.rpm, 1.0);
+            return power ? as::hp(a.power)  + f * (as::hp(b.power)  - as::hp(a.power))
+                         : as::lbft(a.torque) + f * (as::lbft(b.torque) - as::lbft(a.torque));
+        }
+        return 0.0;
+    };
+    const auto row_of = [&](double v, double top) {
+        return std::clamp(static_cast<int>(v / top * rows), 0, rows - 1);
     };
 
-    std::printf("\n  \033[33mlb-ft\033[0m%*s\033[36mhp\033[0m\n",
-                static_cast<int>(pts.size()) * 3 + 2, "");
+    std::vector<int> torque_row(cols), power_row(cols);
+    for (int c = 0; c < cols; ++c) {
+        const double rpm = lo + (hi - lo) * c / (cols - 1);
+        torque_row[std::size_t(c)] = row_of(at(rpm, false), t_top);
+        power_row [std::size_t(c)] = row_of(at(rpm, true),  p_top);
+    }
 
+    // A column is on the curve if the curve passes through it — which includes
+    // the vertical span between this column and the last, or the line breaks
+    // wherever it climbs faster than one row per column.
+    const auto spans = [&](const std::vector<int>& r, int c, int row) {
+        const int here = r[std::size_t(c)];
+        const int prev = r[std::size_t(c > 0 ? c - 1 : c)];
+        return row >= std::min(here, prev) && row <= std::max(here, prev);
+    };
+
+    // One layout, three lines drawn from it: the gutter is "  %4.0f |", so the
+    // plot occupies columns `gutter` to `gutter + cols`, and the right-hand
+    // axis begins two characters after that. Every label below is positioned
+    // from these and not by counting spaces.
+    constexpr int gutter = 8;
+
+    // The right-hand axis prints "| %4.0f", so its numbers end at
+    // gutter + cols + 6. The label ends there too, or it is not a label.
+    std::string head(gutter + cols + 6, ' ');
+    head.replace(2, 5, "lb-ft");
+    head.replace(std::size_t(gutter + cols + 4), 2, "hp");
+    std::printf("\n  \033[33m%s\033[0m\033[36m%s\033[0m\n",
+                head.substr(2, 5).c_str(), head.substr(7).c_str());
     for (int r = rows - 1; r >= 0; --r) {
         std::printf("  %4.0f |", t_top * (r + 1.0) / rows);
-        for (const Point& p : pts) {
-            const bool torque = row_of(as::lbft(p.torque), t_top) == r;
-            const bool power  = row_of(as::hp(p.power),    p_top) == r;
-            if (torque && power) std::printf("\033[32m #\033[0m ");   // they cross
-            else if (torque)     std::printf("\033[33m *\033[0m ");
-            else if (power)      std::printf("\033[36m o\033[0m ");
-            else                 std::printf("   ");
+        for (int c = 0; c < cols; ++c) {
+            const bool t = spans(torque_row, c, r);
+            const bool p = spans(power_row,  c, r);
+            if (t && p)  std::printf("\033[32m#\033[0m");
+            else if (t)  std::printf("\033[33m*\033[0m");
+            else if (p)  std::printf("\033[36mo\033[0m");
+            else         std::printf(" ");
         }
         std::printf("| %4.0f\n", p_top * (r + 1.0) / rows);
     }
 
-    std::printf("       ");
-    for (std::size_t i = 0; i < pts.size(); ++i) std::printf("---");
-    std::printf("\n       ");
-    for (const Point& p : pts) std::printf("%3.0f", p.rpm / 100.0);
-    std::printf("   rpm/100\n");
-    std::printf("\n       \033[33m *\033[0m torque    \033[36m o\033[0m power    \033[32m #\033[0m both\n");
+    std::printf("%*s", gutter, "");
+    for (int c = 0; c < cols; ++c) std::printf("-");
+    std::printf("\n");
+
+    // Each label sits under the column its point was actually plotted at,
+    // which is not the same as spacing them evenly: eleven points across sixty
+    // columns land on 5.9 of them apiece, and stepping by five drifts nine
+    // characters wide by the right-hand end.
+    std::string axis(gutter + cols + 10, ' ');
+    for (std::size_t i = 0; i < pts.size(); ++i) {
+        const int column = gutter + int(std::lround(double(i) * (cols - 1) / double(pts.size() - 1)));
+        char tick[8];
+        std::snprintf(tick, sizeof tick, "%.0f", pts[i].rpm / 100.0);
+        axis.replace(std::size_t(column), std::strlen(tick), tick);
+    }
+    axis.replace(std::size_t(gutter + cols + 3), 7, "rpm/100");
+    std::printf("%s\n", axis.c_str());
+    std::printf("\n       \033[33m*\033[0m torque    \033[36mo\033[0m power    \033[32m#\033[0m both\n");
 }
 
 } // namespace

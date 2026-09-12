@@ -66,7 +66,7 @@
 // compression ratio and advance are actually chosen by, and they are all
 // comparisons.
 //
-// ── Octane numbers ───────────────────────────────────────────────────────
+// ── Octane numbers ────────────────────────────────────────────────────────
 //
 // There are two scales and the pump uses a third. RESEARCH octane is measured
 // at 600 rpm and light load; MOTOR octane at 900 rpm with a heated intake, and

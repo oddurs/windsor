@@ -118,8 +118,11 @@ private:
 
 std::string firing_order_of(const Crankshaft& ck) {
     std::string s;
-    for (int c : ck.firing_order()) s += char('0' + c);
-    return s;
+    for (int c : ck.firing_order()) {
+        if (!s.empty()) s += '-';
+        s += char('0' + c);
+    }
+    return s;   // fifteen characters, which is exactly the column width
 }
 
 std::string bank_intervals_of(const Crankshaft& ck, Bank b) {
@@ -373,8 +376,8 @@ int app::verify(int, char**) {
         const Crankshaft ho    = windsor::cross_plane_crank_ho();
         const Crankshaft flat  = windsor::flat_plane_crank();
 
-        sheet.reads("302 firing order, from the forging", firing_order_of(stock), "15426378");
-        sheet.reads("5.0 H.O., same forging, later cam",  firing_order_of(ho),    "13726548");
+        sheet.reads("302 firing order, from the forging", firing_order_of(stock), "1-5-4-2-6-3-7-8");
+        sheet.reads("5.0 H.O., same forging, later cam",  firing_order_of(ho),    "1-3-7-2-6-5-4-8");
         sheet.note("Ford changed the camshaft and nothing else, and so did this");
 
         sheet.holds("the stock forging reads as a cross", stock.plane() == Plane::cross,

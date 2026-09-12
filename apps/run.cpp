@@ -128,7 +128,11 @@ int app::run(int argc, char** argv) {
         std::printf("\033[H");
         std::printf("  \033[1m%s\033[0m   %s   firing order ",
                     e.name(), name_of(e.crankshaft().plane()));
-        for (int c : e.crankshaft().firing_order()) std::printf("%d", c);
+        {
+            const auto order = e.crankshaft().firing_order();
+            for (int i = 0; i < cylinder_count; ++i)
+                std::printf("%d%s", order[i], i + 1 < cylinder_count ? "-" : "");
+        }
         std::printf("            \n\n");
 
         std::printf("  rpm   ");
@@ -164,8 +168,19 @@ int app::run(int argc, char** argv) {
 
         std::printf("\n  manifold vacuum  %5.1f kPa      spark advance  %4.1f deg BTDC\n",
                     as::kPa(e.manifold_vacuum()), as::deg(e.spark_advance()));
-        std::printf("  peak cylinder    %5.1f bar      torque         %4.0f Nm    %4.0f hp\n",
-                    as::bar(e.peak_pressure()), e.torque(), as::hp(e.power()));
+
+        // Torque and peak pressure are cycle quantities: they do not exist
+        // until a cycle has finished. Until then the engine is holding its
+        // initial guesses, and printing those as though they were readings is
+        // how a gauge lies. A dash is the honest thing to show a driver who
+        // has just turned the key.
+        if (e.cycles() == 0) {
+            std::printf("  peak cylinder    %5s bar      torque         %4s Nm    %4s hp\n",
+                        "--", "--", "--");
+        } else {
+            std::printf("  peak cylinder    %5.1f bar      torque         %4.0f Nm    %4.0f hp\n",
+                        as::bar(e.peak_pressure()), e.torque(), as::hp(e.power()));
+        }
         std::printf("  backpressure     %5.1f kPa      crank angle    %4.0f deg\n",
                     as::kPa(e.bank(Bank::right).backpressure()), as::deg(e.crank_angle()));
 

@@ -36,6 +36,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <vector>
 
 using namespace engine;
@@ -141,7 +142,16 @@ void draw(const Trace& card, const Geometry& g, const char* title, double ceilin
     }
     std::printf("    bar +");
     for (int c = 0; c < cols; ++c) std::printf("-");
-    std::printf("\n         TDC%*s%*s\n", (cols / 2) - 1, "volume", (cols / 2) - 8, "BDC");
+    // The gutter is "  %5.1f |", nine characters, so the trace occupies columns
+    // nine to nine-plus-cols. TDC sits at its left edge and BDC at its right,
+    // because that is where the piston actually is on the page — counted from
+    // the geometry rather than by eye, which had BDC six columns adrift.
+    constexpr int gutter = 9;
+    std::string axis(gutter + cols, ' ');
+    axis.replace(gutter, 3, "TDC");
+    axis.replace(std::size_t(gutter + cols - 3), 3, "BDC");
+    axis.replace(std::size_t(gutter + cols / 2 - 3), 6, "volume");
+    std::printf("\n%s\n", axis.c_str());
 
     std::printf("\n         gross %5.2f bar   pumping %+5.2f bar   net %5.2f bar   peak %.1f bar\n",
                 as::bar(card.gross_mep), as::bar(card.pumping_mep),

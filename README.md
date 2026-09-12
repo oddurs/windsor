@@ -269,13 +269,22 @@ a design decision. Each is named in the file where it bites.
 - **Wrist-pin offset.** Real pistons carry 0.5–1.5 mm toward the thrust side.
   It buys a rattle you cannot hear and costs a closed-form solution.
 
-- **Intake runner tuning.** Built twice, shipped neither. As a waveguide it
-  tuned correctly and put peak torque within 90 rpm of Ford's, and could not be
-  held below 2000 rpm at any damping. As a Helmholtz resonator it was perfectly
-  stable and moved the peak the wrong way. Both cost four times the runtime.
-  Neither let the eight runners meet at the plenum the way the primaries meet at
-  their collector, which is probably the whole difference. The measurements are
-  in `induction.hpp`.
+- **Intake runner tuning.** Built three times, shipped none. The third gave the
+  eight runners one shared junction — the same scattering node the exhaust uses
+  for its collector — which was the hypothesis the second attempt ended on. It
+  was only half right. Sharing redistributes energy between runners; it does not
+  dissipate any, and eight low-loss pipes passing a wave around still have it.
+
+  What mattered more was **length**. At 0.30 m the ram gain came out at 34%
+  where a stock log manifold is worth a few percent, and that is what made the
+  engine unholdable — because a torque-controlled brake on a *rising* torque
+  curve is an unstable equilibrium, and ram tuning is exactly what makes a
+  curve locally rise. Shortened to 0.18 m the gain falls to 4% and the curve
+  comes out smooth.
+
+  It still could not be held between 1000 and 1500 rpm, at any controller gain,
+  and I do not know why. That is written down in `induction.hpp` as the next
+  thing to find out rather than explained away.
 
 - **Nonlinear gas dynamics.** `riemann.hpp` is a second-order finite-volume
   Euler solver, verified against Sod's shock tube to one part in 10⁵ and

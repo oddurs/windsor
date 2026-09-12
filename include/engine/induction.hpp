@@ -41,15 +41,54 @@
 // anyway, packing charge in after the piston has stopped helping — which is
 // why the inlet valve is left open 70° past bottom dead centre.
 //
-// It was built twice. As a waveguide it tuned correctly and put peak torque at
-// 2486 rpm against Ford's 2400, the closest this model has come, and could not
-// be held below 2000 rpm at any damping. As an inertance and a port compliance
-// — a Helmholtz resonator, which is what a runner is — it was perfectly stable
-// and moved the torque peak the wrong way. Both cost four times the runtime.
+// It has been built three times and shipped none of them, and the third is
+// the one worth reading, because it was the hypothesis the second one ended on
+// and the hypothesis turned out to be only half right.
 //
-// What neither did was let the eight runners MEET at the plenum, the way the
-// primaries meet at their collector; each saw a private boundary instead. That
-// is probably the whole difference, and it is the next thing to try.
+// AS A WAVEGUIDE, each runner ending at a fixed reflection of its own. It
+// tuned correctly and put peak torque within 90 rpm of Ford's. It could not be
+// held below 2000 rpm at any damping.
+//
+// AS AN INERTANCE AND A PORT COMPLIANCE — a Helmholtz resonator, which is what
+// a runner is. Perfectly stable, and it moved the torque peak the wrong way.
+//
+// AS EIGHT RUNNERS MEETING AT ONE JUNCTION, which is what the first two were
+// missing: they each ended at a private wall, as though the other seven were
+// not there. Eight runners do not each end at their own wall. They end at the
+// same place, and what leaves one arrives in the others — so they were given
+// the junction `exhaust.hpp` already uses for its collector, widened from five
+// ports to nine, with the plenum's own compliance as the ninth.
+//
+// It found two things and did not ship either.
+//
+// THE JUNCTION WAS NOT THE BLOCKER. Sharing redistributes energy; it does not
+// dissipate any. Eight low-loss pipes passing a wave between them still have
+// it afterwards. Adding a sharp-edged entry loss at the junction, which is a
+// real and large loss nobody had modelled, barely moved it.
+//
+// THE RUNNER LENGTH MATTERED MORE. At 0.30 m the ram gain came out at
+// thirty-four percent — against the few percent a stock log manifold is
+// actually worth — and that is what made the engine unholdable, for a reason
+// that is worth stating plainly:
+//
+//      a torque-controlled brake sitting on a RISING torque curve is an
+//      unstable equilibrium. Speed up a little, make more torque, speed up
+//      more. Ram tuning is exactly the thing that makes a torque curve locally
+//      rise, and the dyno slid into the resonance instead of holding short of
+//      it.
+//
+// That is real engine-and-dynamometer physics and not a defect in either. It
+// is also why modern cells are speed-controlled and not torque-controlled.
+//
+// Shorten the runner to 0.18 m — which a 2V manifold's short branches justify —
+// and the gain falls to four percent and the curve comes out smooth: 366, 380,
+// 375, 366 Nm from 1500 to 3000. Under a frozen brake at 1600 and 2000 rpm the
+// engine then holds to nought percent.
+//
+// AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain
+// from 0.6 to 12 N·m per rpm, on a fresh engine per point, with the load
+// lagged or not. I do not know why. That is the next thing to find out, and
+// saying so is better than the explanation I would have to invent to avoid it.
 
 #pragma once
 

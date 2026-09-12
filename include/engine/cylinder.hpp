@@ -83,7 +83,10 @@ struct Indication {
     double volume;          // m³
     double heat_release;    // W from combustion
     double wall_loss;       // W into the coolant
-    double exhaust_open;    // 0..1, how far off its seat the exhaust valve is
+    // The curtain the exhaust valve has opened: π·D·lift, in m². Zero when
+    // shut, and the pipe beyond it needs the area to know what kind of end it
+    // has — see the reflection in `exhaust.hpp`.
+    double exhaust_curtain;
 };
 
 class Cylinder {
@@ -273,7 +276,7 @@ public:
             mdot_in, mdot_ex,
             p, charge_.temperature, V,
             burn_power, wall_power,
-            lift_ex / s_.camshaft.exhaust().max_lift()
+            si::pi * s_.camshaft.exhaust().diameter() * lift_ex
         };
     }
 

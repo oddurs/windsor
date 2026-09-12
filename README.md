@@ -173,7 +173,7 @@ revolutions instead of one:
 
 |                | cross-plane | flat-plane |      |
 | -------------- | ----------- | ---------- | ---- |
-| one bank alone | **0.42**    | **0.0010** | 404× |
+| one bank alone | **0.70**    | **0.0009** | 742× |
 
 Ninety-six percent of the energy sits below 90 Hz, where the burble lives, and
 nothing measurable above 1.4 kHz.

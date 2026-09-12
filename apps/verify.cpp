@@ -252,16 +252,9 @@ Engine::Specification altered(double compression, double octane, double extra_ad
 
 } // namespace
 
-int app::verify(int, char**) {
-    Sheet sheet;
+// ── The linkage ───────────────────────────────────────────────────────────
+void the_linkage(Sheet& sheet) {
     const Geometry g   = windsor::short_block();
-    const Camshaft cam = windsor::stock_cam();
-
-    std::printf("\n\033[1mwindsor — inspection\033[0m\n");
-    std::printf("\033[2m  every number this project quotes, checked against something outside it\033[0m\n");
-    std::printf("\n  %-43s %-15s %-15s\n", "", "measured", "expected");
-
-    // ── The linkage ───────────────────────────────────────────────────────
     sheet.section("THE LINKAGE");
     {
         constexpr double h = 1e-6;
@@ -282,8 +275,10 @@ int app::verify(int, char**) {
         sheet.within("eight bores of it come to a 302",
                      as::ci(8.0 * g.swept_volume()), 301.0, 302.0, "ci");
     }
+}
 
-    // ── The fire ──────────────────────────────────────────────────────────
+// ── The fire ──────────────────────────────────────────────────────────────
+void the_fire(Sheet& sheet) {
     sheet.section("THE FIRE");
     {
         const Wiebe burn{70.0_deg};
@@ -301,8 +296,11 @@ int app::verify(int, char**) {
         sheet.within("sound travels faster in hot exhaust",
                      air::speed_of_sound(900.0), 560.0, 620.0, "m/s");
     }
+}
 
-    // ── The bottleneck ────────────────────────────────────────────────────
+// ── The bottleneck ────────────────────────────────────────────────────────
+void the_bottleneck(Sheet& sheet) {
+    const Camshaft cam = windsor::stock_cam();
     sheet.section("THE BOTTLENECK");
     {
         const double intake = cam.intake().diameter();
@@ -332,8 +330,11 @@ int app::verify(int, char**) {
         sheet.holds("flow is signed, so reversion shows",
                     port::mass_flow(area, 101325.0, 320.0, 130000.0, 400.0) < 0.0);
     }
+}
 
-    // ── The camshaft, against the card ────────────────────────────────────
+// ── The camshaft, against the card ────────────────────────────────────────
+void the_camshaft_against_the_card(Sheet& sheet) {
+    const Camshaft cam = windsor::stock_cam();
     sheet.section("THE CAMSHAFT, AGAINST THE 1968 CARD");
     {
         sheet.note("the card gives four events and two durations. the model is built from");
@@ -353,8 +354,10 @@ int app::verify(int, char**) {
         sheet.matches("overlap", as::deg(cam.overlap()), 40.0, 0.02);
         sheet.note("a card quotes centrelines about the gas-exchange TDC, 360 deg away");
     }
+}
 
-    // ── The carburettor ───────────────────────────────────────────────────
+// ── The carburettor ───────────────────────────────────────────────────────
+void the_carburettor(Sheet& sheet) {
     sheet.section("THE CARBURETTOR");
     {
         const double depression = 3.0 * 3386.4;      // 3 inHg, the 2V standard
@@ -368,8 +371,10 @@ int app::verify(int, char**) {
         sheet.note("Autolite rate the 2100 at 287 cfm; the gap is its discharge");
         sheet.note("coefficient, which the geometry alone cannot know");
     }
+}
 
-    // ── What was never typed in ───────────────────────────────────────────
+// ── What was never typed in ───────────────────────────────────────────────
+void what_was_never_typed_in(Sheet& sheet) {
     sheet.section("WHAT WAS NEVER TYPED IN");
     {
         const Crankshaft stock = windsor::cross_plane_crank();
@@ -405,8 +410,11 @@ int app::verify(int, char**) {
         sheet.holds("so one of them is lopsided", !stock.banks_fire_evenly());
         sheet.holds("and one of them is not", flat.banks_fire_evenly());
     }
+}
 
-    // ── What it cost ──────────────────────────────────────────────────────
+// ── What it cost ──────────────────────────────────────────────────────────
+void what_it_cost(Sheet& sheet) {
+    const Geometry g   = windsor::short_block();
     sheet.section("WHAT IT COST");
     {
         const Crankshaft stock = windsor::cross_plane_crank();
@@ -427,8 +435,10 @@ int app::verify(int, char**) {
         sheet.within("cross-plane primary couple traces a circle",
                      cross_balance.primary(at).eccentricity, 0.0, 0.05, "");
     }
+}
 
-    // ── The engine, running ───────────────────────────────────────────────
+// ── The engine, running ───────────────────────────────────────────────────
+void the_engine_running(Sheet& sheet) {
     sheet.section("THE ENGINE, RUNNING");
     {
         Engine e = windsor::stock();
@@ -463,9 +473,10 @@ int app::verify(int, char**) {
         sheet.note("Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400,");
         sheet.note("gross. the model makes 306 at 1985 and 206 at 4994.");
     }
+}
 
-
-    // ── The fuel, and what stops the engine ───────────────────────────────
+// ── The fuel, and what stops the engine ───────────────────────────────────
+void the_fuel_and_what_stops_the_engine(Sheet& sheet) {
     sheet.section("THE FUEL");
     {
         const Fuel petrol = Fuel::gasoline();
@@ -505,9 +516,10 @@ int app::verify(int, char**) {
                     hold_at(Engine{altered(9.5, 94.0, 0.0)}, 2500.0, 1.30).knock < stock);
         sheet.note("so compression ratio, advance and octane are one decision, not three");
     }
+}
 
-
-    // ── What the pipes in this engine are not ─────────────────────────────
+// ── What the pipes in this engine are not ─────────────────────────────────
+void what_the_pipes_in_this_engine_are_not(Sheet& sheet) {
     sheet.section("WHAT THE PIPES ARE NOT");
     {
         sheet.note("exhaust.hpp models a pipe as two delay lines, which is exact for a");
@@ -605,8 +617,10 @@ int app::verify(int, char**) {
         sheet.note("its own front. it is why the crack of an exhaust is sharper at the pipe");
         sheet.note("than it was at the valve, and the engine here cannot reproduce it.");
     }
+}
 
-    // ── The thesis ────────────────────────────────────────────────────────
+// ── The thesis ────────────────────────────────────────────────────────────
+void the_thesis(Sheet& sheet) {
     sheet.section("THE THESIS");
     {
         double cross_rpm = 0.0, flat_rpm = 0.0;
@@ -626,6 +640,25 @@ int app::verify(int, char**) {
                      + "x").c_str());
         sheet.note("that ratio is the entire project, and it came out of four throw angles");
     }
+}
+
+int app::verify(int, char**) {
+    Sheet sheet;
+    std::printf("\n\033[1mwindsor — inspection\033[0m\n");
+    std::printf("\033[2m  every number this project quotes, checked against something outside it\033[0m\n");
+    std::printf("\n  %-43s %-15s %-15s\n", "", "measured", "expected");
+
+    the_linkage(sheet);
+    the_fire(sheet);
+    the_bottleneck(sheet);
+    the_camshaft_against_the_card(sheet);
+    the_carburettor(sheet);
+    what_was_never_typed_in(sheet);
+    what_it_cost(sheet);
+    the_engine_running(sheet);
+    the_fuel_and_what_stops_the_engine(sheet);
+    what_the_pipes_in_this_engine_are_not(sheet);
+    the_thesis(sheet);
 
     return sheet.report();
 }

@@ -192,7 +192,7 @@ public:
             gas_torque += ind.torque;
             port_flow  += ind.intake_flow;        // positive INTO the cylinder,
                                                   // so this is what the plenum lost
-            banks_[side].receive(seat, -ind.exhaust_flow, ind.exhaust_open);
+            banks_[side].receive(seat, -ind.exhaust_flow, ind.exhaust_curtain);
             peak = std::max(peak, ind.pressure);
         }
 

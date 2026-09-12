@@ -275,9 +275,9 @@ public:
     //             engine they are not, quite, and equal-length headers cost
     //             what they cost precisely because making them so is hard.
     // mass_flow — kg/s leaving the cylinder, positive outward.
-    void receive(int seat, double mass_flow, double valve_open) {
-        port_flow_[seat] = mass_flow;
-        port_open_[seat] = valve_open;
+    void receive(int seat, double mass_flow, double curtain) {
+        port_flow_[seat]    = mass_flow;
+        port_curtain_[seat] = curtain;
     }
 
     // What the exhaust valve of the cylinder on this seat is actually pushing
@@ -324,13 +324,13 @@ public:
             for (int i = 0; i < 4; ++i) {
                 ramped_[i] = previous_flow_[i]
                            + across * (port_flow_[i] - previous_flow_[i]);
-                open_[i]   = previous_open_[i]
-                           + across * (port_open_[i] - previous_open_[i]);
+                curtain_[i]   = previous_curtain_[i]
+                           + across * (port_curtain_[i] - previous_curtain_[i]);
             }
             tick();
         }
         previous_flow_ = port_flow_;
-        previous_open_ = port_open_;
+        previous_curtain_ = port_curtain_;
     }
 
     // Samples produced since the last drain, in arbitrary units; the recorder
@@ -387,14 +387,26 @@ private:
             // is physical; it is the solver talking about itself.
             const double injected = source_[i](mean_density_ * sound_speed_ * velocity);
 
-            // Open, the end of the pipe is coupled to half a litre of
-            // cylinder and swallows part of what arrives; shut, it is a closed
-            // end and bounces it. It must follow the lift CONTINUOUSLY. Switch
-            // between the two the instant flow appears and you put a step
-            // discontinuity in a loop gain sixteen times a cycle, which is a
+            // ── What kind of end the valve is ─────────────────────────────
+            //
+            // Not a constant, and not two constants faded between. A wave
+            // meets whatever area the valve has opened, and the reflection is
+            // that area against the pipe's own:
+            //
+            //      r = (A_pipe − A_curtain) / (A_pipe + A_curtain)
+            //
+            // Shut, the curtain is zero and r is +1 — a closed end, exactly,
+            // with nothing declared. Open, a 1.442 in valve on 0.425 in of
+            // lift opens 1.93 in² against 2.07 in² of primary, so the wave
+            // finds slightly LESS room than it came from and barely reflects
+            // at all: r = +0.04.
+            //
+            // It has to be continuous in the lift either way. Switch between
+            // two values the instant flow appears and you have put a step
+            // discontinuity in a loop gain, sixteen times a cycle, which is a
             // click, and a click is broadband.
-            const double reflection = closed_end_reflection
-                + open_[i] * (open_valve_reflection - closed_end_reflection);
+            const double reflection = (primary_area_ - curtain_[i])
+                                    / (primary_area_ + curtain_[i]);
             const double outgoing = returning * reflection + injected;
 
             primary_out_[i].write(outgoing);
@@ -459,8 +471,6 @@ private:
     // pass, which is why a long system sounds darker than a short one and why
     // an open header is so bright it is unpleasant to stand behind.
 
-    static constexpr double closed_end_reflection = 0.96;
-    static constexpr double open_valve_reflection = 0.45;
     static constexpr double open_end_reflection   = 0.72;
 
     Setup s_;
@@ -471,9 +481,9 @@ private:
     double mean_pressure_ = si::p_atmosphere;
     double mean_density_  = 1.0;
     double admittance_primary_ = 0.0, admittance_collector_ = 0.0;
-    std::array<double, 4> port_flow_{}, port_open_{};
-    std::array<double, 4> previous_flow_{}, previous_open_{};
-    std::array<double, 4> ramped_{}, open_{};
+    std::array<double, 4> port_flow_{}, port_curtain_{};
+    std::array<double, 4> previous_flow_{}, previous_curtain_{};
+    std::array<double, 4> ramped_{}, curtain_{};
     std::array<OnePole, 4> source_{};
     std::array<double, 4> valve_pressure_{};
     OnePole mouth_, radiation_;

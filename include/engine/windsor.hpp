@@ -89,15 +89,16 @@ inline Crankshaft cross_plane_crank() {
     return Crankshaft{
         90.0_deg,
         { 45.0_deg, 315.0_deg, 135.0_deg, 225.0_deg },
-        {{  // cylinder      journal  bank          revolution
-            /* 1 */         { 0, Bank::right, 0 },
-            /* 2 */         { 1, Bank::right, 0 },
-            /* 3 */         { 2, Bank::right, 1 },
-            /* 4 */         { 3, Bank::right, 0 },
-            /* 5 */         { 0, Bank::left,  0 },
-            /* 6 */         { 1, Bank::left,  1 },
-            /* 7 */         { 2, Bank::left,  1 },
-            /* 8 */         { 3, Bank::left,  1 },
+        {{
+        //  cylinder    journal   bank          revolution
+            /* 1 */     { 0,      Bank::right,  0 },
+            /* 2 */     { 1,      Bank::right,  0 },
+            /* 3 */     { 2,      Bank::right,  1 },
+            /* 4 */     { 3,      Bank::right,  0 },
+            /* 5 */     { 0,      Bank::left,   0 },
+            /* 6 */     { 1,      Bank::left,   1 },
+            /* 7 */     { 2,      Bank::left,   1 },
+            /* 8 */     { 3,      Bank::left,   1 },
         }},
         0.20                       // kg·m², crank + damper + flywheel + clutch
     };

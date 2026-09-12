@@ -61,10 +61,11 @@ So `windsor.hpp` specifies the forging, and nothing else:
 Crankshaft{
     90.0_deg,
     { 45.0_deg, 315.0_deg, 135.0_deg, 225.0_deg },
-    {{  // cylinder      journal  bank          revolution
-        /* 1 */         { 0, Bank::right, 0 },
-        /* 2 */         { 1, Bank::right, 0 },
-        /* 3 */         { 2, Bank::right, 1 },
+    {{
+    //  cylinder    journal   bank          revolution
+        /* 1 */     { 0,      Bank::right,  0 },
+        /* 2 */     { 1,      Bank::right,  0 },
+        /* 3 */     { 2,      Bank::right,  1 },
         ...
 ```
 
@@ -103,7 +104,7 @@ forging** — which is exactly what Ford did — and the order becomes
 ./windsor verify
 ```
 
-Fifty-five checks, in a couple of seconds, every one of them against something
+Sixty-one checks, in a couple of seconds, every one of them against something
 outside the project — a derivative against finite differences, a burn rate
 against its own integral, a cylinder head against a flow bench, a firing order
 against the casting, and the thesis against a Fourier transform.
@@ -114,22 +115,25 @@ Nothing in the model was fitted to any of it. A selection:
 discharge coefficient and a throat cap. The sag of that coefficient past its
 peak is the one number in it fitted to anything, and it is fitted to this:
 
-| lift                      | model   | published, stock C8OE castings |
-| ------------------------- | ------- | ------------------------------ |
-| 0.375 in (the cam's peak) | 146 cfm | ~150 cfm at 0.400 in           |
+| lift                      | model     | published, stock C8OE-F castings |
+| ------------------------- | --------- | -------------------------------- |
+| 0.400 in                  | 153.5 cfm | ~150 cfm                         |
+| 0.426 in (the cam's peak) | 149.9 cfm | —                                |
 
 **The engine, against Ford.** `./windsor dyno`:
 
 |             | model            | Ford, 1968 302-2V (gross) |
 | ----------- | ---------------- | ------------------------- |
-| peak torque | 320 lb-ft @ 2000 | 300 lb-ft @ 2600          |
-| peak power  | 237 hp @ 5000    | 210 hp @ 4600             |
+| peak torque | 306 lb-ft @ 1985 | 295 lb-ft @ 2400          |
+| peak power  | 206 hp @ 4994    | 210 hp @ 4400             |
 
-Within four percent on torque and two on power, with no fitting anywhere —
-though both peaks still sit a few hundred rpm high, which is the intake runner
-tuning that is still missing. It was ten
-percent optimistic with the power peak a thousand rpm too high until the
-carburettor's venturis went in — a two-barrel engine breathes through a hole
+Within four percent on torque and two on power, with no fitting anywhere. The
+magnitudes are close; the shape is still too flat. Torque peaks about 400 rpm
+low and power about 600 rpm high, so the model's curve is broader than the real
+engine's — which is the intake runner tuning that is still missing.
+
+It was ten percent optimistic with the power peak a thousand rpm too high until
+the carburettor's venturis went in — a two-barrel engine breathes through a hole
 that cannot be opened, and that hole is most of why the 2V made its power at
 4400 where the otherwise identical 4V made more of it at 4800.
 
@@ -145,10 +149,10 @@ is work the engine spends on breathing:
 
 | at 2000 rpm | gross     | pumping       | net       |
 | ----------- | --------- | ------------- | --------- |
-| wide open   | 12.39 bar | −0.03 bar     | 12.36 bar |
-| throttled   | 1.20 bar  | **−0.93 bar** | 0.27 bar  |
+| wide open   | 11.94 bar | −0.07 bar     | 11.87 bar |
+| throttled   | 0.98 bar  | **−0.93 bar** | 0.05 bar  |
 
-Seventy-eight percent of everything it makes, spent on suffocating itself. That
+Ninety-five percent of everything it makes, spent on suffocating itself. That
 is the price of controlling a petrol engine with a plate across its throat,
 and it is most of why a diesel is more efficient at part load and barely more
 efficient at full.
@@ -197,12 +201,14 @@ disagree.
 whole-order energy at idle — half-orders being the signature of a pulse train
 that repeats every *two* revolutions instead of one:
 
-|                | cross-plane | flat-plane |     |
-| -------------- | ----------- | ---------- | --- |
-| one bank alone | **1.23**    | **0.047**  | 26× |
+|                | cross-plane | flat-plane |      |
+| -------------- | ----------- | ---------- | ---- |
+| one bank alone | **0.42**    | **0.0010** | 404× |
 
-The firing fundamental carries 81% of the energy and only 6% sits above
-1.4 kHz, which is what a V8 idle looks like on an analyser.
+Ninety-six percent of the energy sits below 90 Hz — the rate a single bank
+fires at, and the half-orders packed around it, which is where the burble lives
+— and nothing measurable at all above 1.4 kHz. Which is what a V8 idle looks
+like on an analyser.
 
 Summing two banks recombines them toward an even train and cancels much of the
 unevenness, which is why people have argued about H-pipes and true duals for
@@ -257,7 +263,7 @@ Each cylinder is an **open thermodynamic system**, integrated in crank angle,
 five terms of the first law per radian:
 
 ```
-m·cᵥ·dT/dθ  =  −p·dV/dθ          the piston, taking or giving work
+m·cᵥ·dT/dθ  =  −p·dV/dθ           the piston, taking or giving work
                + dQ_burn/dθ       the fire            (Wiebe)
                − dQ_wall/dθ       the coolant         (Woschni)
                + Σ (dmᵢ/dθ)·hᵢ    gas arriving        (compressible orifice flow)
@@ -334,7 +340,7 @@ None of these would change the shape of the project.
 make
 ./windsor spec       what was built, and what falls out of it
 ./windsor dyno       put it on a water brake and sweep it
-./windsor run        watch it idle  (SPACE for throttle, Q to stop)
+./windsor run        watch it idle  (0-9 throttle, SPACE wide open, Q quit)
 ./windsor card       let it draw its own indicator diagram
 ./windsor record     stand behind it with two microphones
 ./windsor verify     check every number this project quotes

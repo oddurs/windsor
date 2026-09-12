@@ -113,7 +113,24 @@ against the casting. The shop-manual voice is only earned if the figures are
 right; a beautiful comment attached to wrong arithmetic is the worst thing this
 project could contain.
 
-### 6. One idea per file
+### 6. Every figure quoted outside the code is a copy, and copies rot
+
+The README quotes dozens of numbers — flow bench cfm, peak torque, half-order
+ratios, pumping mean effective pressures. Every one of them is a *copy* of
+something the program prints, and the program changes.
+
+They have drifted three times, and always the same way: an edit anchored on a
+string that had since been reformatted, applied with a plain replace and no
+check, which silently did nothing. The README went on quoting 320 lb-ft for an
+engine making 306, and a flow figure at a lift the camshaft no longer had.
+
+So: after any change to the model, re-run `./windsor verify`, `./windsor dyno`
+and `./windsor card`, and reconcile every number in the README against what
+they actually printed. And when editing prose programmatically, assert the
+anchor exists. An edit that silently does nothing is worse than one that fails,
+because you will believe it worked.
+
+### 7. One idea per file
 
 A file is named for a part or a person — `camshaft.hpp`, `wiebe.hpp`,
 `woschni.hpp`. Files named after the people who fitted the correlations are

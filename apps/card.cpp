@@ -171,7 +171,8 @@ int app::card(int argc, char** argv) {
     const double ceiling = std::max(open.peak, closed.peak) * 1.1;
 
     std::printf("\n\033[1mindicator card\033[0m — %s, cylinder 1, %.0f rpm\n", wide.name(), at_rpm);
-    std::printf("\033[2m  pressure is logarithmic, so area is not work; the work is printed below\033[0m\n");
+    std::printf("\033[2m  Pressure is logarithmic, so area is not work. "
+                "The work is printed below.\033[0m\n");
 
     draw(open,   wide.geometry(), "WIDE OPEN THROTTLE", ceiling);
     draw(closed, shut.geometry(), "THROTTLE CLOSED",    ceiling);

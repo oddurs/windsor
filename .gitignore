@@ -1,7 +1,4 @@
-build/
-*.o
-*.wav
-*.csv
 windsor
+*.wav
 .DS_Store
 compile_commands.json

@@ -160,8 +160,11 @@ int app::record(int argc, char** argv) {
     std::printf("\n\033[1m%s\033[0m — %s crankshaft\n",
                 e.name(), name_of(e.crankshaft().plane()));
     std::printf("  each bank fires at ");
-    for (double g : e.crankshaft().firing_intervals(Bank::right)) std::printf("%.0f ", as::deg(g));
-    std::printf("deg\n\n");
+    {
+        const auto gaps = e.crankshaft().firing_intervals(Bank::right);
+        for (std::size_t i = 0; i < gaps.size(); ++i)
+            std::printf("%.0f%s", as::deg(gaps[i]), i + 1 < gaps.size() ? " - " : " deg\n\n");
+    }
 
     for (const Phase& phase : script) {
         const double until = phase.seconds;
@@ -267,9 +270,9 @@ int app::record(int argc, char** argv) {
 
     std::printf("\n  %s — %.1f seconds, stereo, %zu frames at 44.1 kHz\n",
                 path, channel_left.size() / 44100.0, channel_left.size());
-    std::printf("\033[2m  two microphones %.2f m apart, %.2f m behind two tailpipes %.2f m apart.\n",
+    std::printf("\033[2m  Two microphones %.2f m apart, %.2f m behind two tailpipes %.2f m\n",
                 spacing, behind, track);
-    std::printf("  the stereo is the geometry. nothing in this file knows what a V8\n");
-    std::printf("  sounds like.\033[0m\n\n");
+    std::printf("  apart. The stereo is the geometry. Nothing in this file knows what a\n");
+    std::printf("  V8 sounds like.\033[0m\n\n");
     return 0;
 }

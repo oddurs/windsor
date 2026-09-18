@@ -12,10 +12,10 @@ import { color, font, layout, leading, size, space } from '@/design/tokens.style
 // menu, and these four are the argument in the order it is made — the claim,
 // the machine, what it produces, and the proof.
 const pages = [
-  { href: '/crankshaft', label: 'the argument' },
-  { href: '/engine', label: 'the engine' },
-  { href: '/instruments', label: 'the instruments' },
-  { href: '/evidence', label: 'the evidence' },
+  { href: '/crankshaft', label: 'argument' },
+  { href: '/engine', label: 'engine' },
+  { href: '/instruments', label: 'instruments' },
+  { href: '/evidence', label: 'evidence' },
 ] as const;
 
 const source = 'https://github.com/oddurs/windsor';
@@ -47,17 +47,10 @@ export function Shell({ children }: { children: ReactNode }) {
                 {page.label}
               </Link>
             ))}
-            <a
-              href={source}
-              rel="noreferrer"
-              {...stylex.props(s.link, s.offsite)}
-            >
-              github
-              <span aria-hidden {...stylex.props(s.arrow)}>
-                ↗
-              </span>
-            </a>
           </nav>
+          <a href={source} rel="noreferrer" {...stylex.props(s.link)}>
+            github
+          </a>
         </div>
       </header>
 
@@ -114,11 +107,12 @@ const s = stylex.create({
     rowGap: space.xs,
     width: '100%',
   },
+  // No rule, no ground, no weight. A running head should be findable when it is
+  // looked for and absent when it is not, and a line across the top of every
+  // page is the loudest thing a site can own without meaning to.
   header: {
-    borderBottomColor: color.rule,
-    borderBottomStyle: 'solid',
-    borderBottomWidth: 1,
-    paddingBlock: space.md,
+    paddingBlockEnd: space.md,
+    paddingBlockStart: space.line,
   },
   wordmark: {
     color: color.ink,
@@ -131,28 +125,24 @@ const s = stylex.create({
     columnGap: space.md,
     display: 'flex',
     flexWrap: 'wrap',
+    marginInlineEnd: 'auto',
+    marginInlineStart: {
+      default: space.line,
+      '@media (max-width: 34rem)': 0,
+    },
     rowGap: space.hair,
   },
+  // Colour is the only signal. An underline here would be a second one saying
+  // the same thing, and where you are is worth exactly one.
   link: {
-    color: { default: color.muted, ':hover': color.ink },
+    color: { default: color.faint, ':hover': color.ink },
     fontSize: size.tiny,
-    textDecorationColor: { default: 'transparent', ':hover': color.faint },
-    textDecorationLine: 'underline',
-    textDecorationThickness: '1px',
-    textUnderlineOffset: '0.2em',
+    textDecorationLine: 'none',
     transitionDuration: '120ms',
-    transitionProperty: 'color, text-decoration-color',
+    transitionProperty: 'color',
   },
   here: {
     color: color.ink,
-    textDecorationColor: color.faint,
-  },
-  offsite: {
-    color: { default: color.faint, ':hover': color.ink },
-  },
-  arrow: {
-    fontSize: '0.85em',
-    paddingInlineStart: '0.15em',
   },
   main: {
     flex: 1,
@@ -160,7 +150,7 @@ const s = stylex.create({
     paddingBlockStart: space.lg,
   },
   footer: {
-    borderTopColor: color.rule,
+    borderTopColor: color.hairline,
     borderTopStyle: 'solid',
     borderTopWidth: 1,
     color: color.faint,

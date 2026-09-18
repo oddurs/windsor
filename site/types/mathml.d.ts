@@ -17,7 +17,11 @@ declare module 'react' {
       mfrac: MathMLProps;
       mi: MathMLProps & { mathvariant?: string };
       mn: MathMLProps;
-      mo: MathMLProps & { stretchy?: 'true' | 'false' };
+      mo: MathMLProps & {
+        largeop?: 'true' | 'false';
+        separator?: 'true' | 'false';
+        stretchy?: 'true' | 'false';
+      };
       mrow: MathMLProps;
       msqrt: MathMLProps;
       mspace: MathMLProps & { width?: string };

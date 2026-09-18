@@ -12,6 +12,52 @@ import { color, font, leading, size, space } from '@/design/tokens.stylex';
 //
 // They live together in one file because they are one idea: the argument the
 // engine is actually making, written the way it was derived.
+//
+// ── Setting it properly ─────────────────────────────────────────────────────
+//
+// A quantity is italic and everything else is upright. That is not decoration,
+// it is the distinction the notation carries: `d` is an operator, `sin` is a
+// function, and the `v` in cᵥ is the word "volume" abbreviated — none of them
+// are quantities, so none of them lean. The two invisible operators do the rest
+// of the work: U+2062 between factors, U+2061 between a function and what it is
+// applied to, which is what tells the renderer how much air to leave.
+
+const Rm = ({ children }: { children: string }) => (
+  <mi mathvariant="normal">{children}</mi>
+);
+
+const Times = () => <mo>{'⁢'}</mo>;
+const Of = () => <mo>{'⁡'}</mo>;
+
+// An upright d, per ISO 80000-2, bound to what it differentiates.
+const D = ({ of }: { of: string }) => (
+  <mrow>
+    <Rm>d</Rm>
+    <Times />
+    <mi>{of}</mi>
+  </mrow>
+);
+
+const dTheta = (
+  <mrow>
+    <Rm>d</Rm>
+    <Times />
+    <mi>θ</mi>
+  </mrow>
+);
+
+// sin²θ, and not sinθ². The exponent belongs to the function, and putting it
+// after the argument says something else entirely.
+const SinSquared = () => (
+  <mrow>
+    <msup>
+      <mi mathvariant="normal">sin</mi>
+      <mn>2</mn>
+    </msup>
+    <Of />
+    <mi>θ</mi>
+  </mrow>
+);
 
 function Equation({ children, note }: { children: ReactNode; note?: string }) {
   return (
@@ -22,33 +68,19 @@ function Equation({ children, note }: { children: ReactNode; note?: string }) {
   );
 }
 
-// A differential, as a component rather than a value, so that mfrac always
-// receives exactly the two children it is defined to take.
-const D = ({ of }: { of: string }) => (
-  <mrow>
-    <mi>d</mi>
-    <mi>{of}</mi>
-  </mrow>
-);
-
-const dTheta = (
-  <mrow>
-    <mi>d</mi>
-    <mi>θ</mi>
-  </mrow>
-);
-
 // ── The first law, per radian of crank ──────────────────────────────────────
 //
-// Set as five separate rows against their own annotations rather than as one
-// long line, because that is how it is read: a left-hand side, and then five
-// things that happen to a box of gas, each of which is a file.
+// Set as five rows against their own annotations rather than as one long line,
+// because that is how it is read: a left-hand side, and then five things that
+// happen to a box of gas, each of which is a file. The signs align down the
+// left, which is the only reason the column is there.
 
 const terms: readonly [ReactNode, string][] = [
   [
     <mrow key="work">
       <mo>−</mo>
       <mi>p</mi>
+      <Times />
       <mfrac>
         <D of="V" />
         {dTheta}
@@ -61,7 +93,8 @@ const terms: readonly [ReactNode, string][] = [
       <mo>+</mo>
       <mfrac>
         <mrow>
-          <mi>d</mi>
+          <Rm>d</Rm>
+          <Times />
           <msub>
             <mi>Q</mi>
             <mtext>burn</mtext>
@@ -77,7 +110,8 @@ const terms: readonly [ReactNode, string][] = [
       <mo>−</mo>
       <mfrac>
         <mrow>
-          <mi>d</mi>
+          <Rm>d</Rm>
+          <Times />
           <msub>
             <mi>Q</mi>
             <mtext>wall</mtext>
@@ -91,10 +125,11 @@ const terms: readonly [ReactNode, string][] = [
   [
     <mrow key="in">
       <mo>+</mo>
-      <mo>∑</mo>
+      <mo largeop="true">∑</mo>
       <mfrac>
         <mrow>
-          <mi>d</mi>
+          <Rm>d</Rm>
+          <Times />
           <msub>
             <mi>m</mi>
             <mi>i</mi>
@@ -102,6 +137,7 @@ const terms: readonly [ReactNode, string][] = [
         </mrow>
         {dTheta}
       </mfrac>
+      <Times />
       <msub>
         <mi>h</mi>
         <mi>i</mi>
@@ -113,6 +149,7 @@ const terms: readonly [ReactNode, string][] = [
     <mrow key="mass">
       <mo>−</mo>
       <mi>u</mi>
+      <Times />
       <mfrac>
         <D of="m" />
         {dTheta}
@@ -130,14 +167,16 @@ export function FirstLaw() {
           <math display="block">
             <mrow>
               <mi>m</mi>
+              <Times />
               <msub>
                 <mi>c</mi>
-                <mi>v</mi>
+                <mtext>v</mtext>
               </msub>
+              <Times />
               <mfrac>
-        <D of="T" />
-        {dTheta}
-      </mfrac>
+                <D of="T" />
+                {dTheta}
+              </mfrac>
               <mo>=</mo>
             </mrow>
           </math>
@@ -157,22 +196,25 @@ export function FirstLaw() {
 
 export function CrankSlider() {
   return (
-    <Equation note="s is how far the piston has come down from top dead centre; a is the crank throw, l the rod, A the bore area, Vc the clearance volume.">
+    <Equation note="s is how far the piston has come down from top dead centre; a is the crank throw, l the rod, A the bore area, and Vc the clearance volume.">
       <math display="block">
         <mrow>
           <mi>s</mi>
-          <mo>(</mo>
+          <Of />
+          <mo stretchy="false">(</mo>
           <mi>θ</mi>
-          <mo>)</mo>
+          <mo stretchy="false">)</mo>
           <mo>=</mo>
-          <mo>(</mo>
+          <mo stretchy="false">(</mo>
           <mi>a</mi>
           <mo>+</mo>
           <mi>l</mi>
-          <mo>)</mo>
+          <mo stretchy="false">)</mo>
           <mo>−</mo>
           <mi>a</mi>
-          <mi>cos</mi>
+          <Times />
+          <mi mathvariant="normal">cos</mi>
+          <Of />
           <mi>θ</mi>
           <mo>−</mo>
           <msqrt>
@@ -186,13 +228,8 @@ export function CrankSlider() {
                 <mi>a</mi>
                 <mn>2</mn>
               </msup>
-              <msup>
-                <mrow>
-                  <mi>sin</mi>
-                  <mi>θ</mi>
-                </mrow>
-                <mn>2</mn>
-              </msup>
+              <Times />
+              <SinSquared />
             </mrow>
           </msqrt>
         </mrow>
@@ -200,20 +237,23 @@ export function CrankSlider() {
       <math display="block">
         <mrow>
           <mi>V</mi>
-          <mo>(</mo>
+          <Of />
+          <mo stretchy="false">(</mo>
           <mi>θ</mi>
-          <mo>)</mo>
+          <mo stretchy="false">)</mo>
           <mo>=</mo>
           <msub>
             <mi>V</mi>
-            <mi>c</mi>
+            <mtext>c</mtext>
           </msub>
           <mo>+</mo>
           <mi>A</mi>
+          <Times />
           <mi>s</mi>
-          <mo>(</mo>
+          <Of />
+          <mo stretchy="false">(</mo>
           <mi>θ</mi>
-          <mo>)</mo>
+          <mo stretchy="false">)</mo>
         </mrow>
       </math>
     </Equation>
@@ -224,25 +264,32 @@ export function CrankSlider() {
 
 export function Woschni() {
   const power = (base: string, exponent: string) => (
-    <msup>
-      <mi>{base}</mi>
-      <mrow>
-        {exponent.startsWith('−') ? <mo>−</mo> : null}
-        <mn>{exponent.replace('−', '')}</mn>
-      </mrow>
-    </msup>
+    <>
+      <msup>
+        <mi>{base}</mi>
+        <mrow>
+          {exponent.startsWith('−') ? <mo>−</mo> : null}
+          <mn>{exponent.replace('−', '')}</mn>
+        </mrow>
+      </msup>
+      <Times />
+    </>
   );
   return (
-    <Equation note="B in metres, p in KILOPASCALS, T in kelvin, w in m/s — and it returns W/(m²·K).">
+    <Equation note="B in metres, p in KILOPASCALS, T in kelvin, w in metres per second — and it returns watts per square metre kelvin.">
       <math display="block">
         <mrow>
           <mi>h</mi>
           <mo>=</mo>
           <mn>3.26</mn>
+          <Times />
           {power('B', '−0.2')}
           {power('p', '0.8')}
           {power('T', '−0.55')}
-          {power('w', '0.8')}
+          <msup>
+            <mi>w</mi>
+            <mn>0.8</mn>
+          </msup>
         </mrow>
       </math>
     </Equation>
@@ -253,11 +300,11 @@ export function Woschni() {
 
 export function LivengoodWu() {
   return (
-    <Equation note="τ is the ignition delay at the pressure and temperature of that instant.">
+    <Equation note="τ is the ignition delay at the pressure and temperature of that instant, so the end gas spends a little of its patience at every one of them.">
       <math display="block">
         <mrow>
           <munderover>
-            <mo>∫</mo>
+            <mo largeop="true">∫</mo>
             <mn>0</mn>
             <msub>
               <mi>t</mi>
@@ -266,16 +313,18 @@ export function LivengoodWu() {
           </munderover>
           <mfrac>
             <mrow>
-              <mi>d</mi>
+              <Rm>d</Rm>
+              <Times />
               <mi>t</mi>
             </mrow>
             <mrow>
               <mi>τ</mi>
-              <mo>(</mo>
+              <Of />
+              <mo stretchy="false">(</mo>
               <mi>p</mi>
-              <mo>,</mo>
+              <mo separator="true">,</mo>
               <mi>T</mi>
-              <mo>)</mo>
+              <mo stretchy="false">)</mo>
             </mrow>
           </mfrac>
           <mo>=</mo>
@@ -314,6 +363,8 @@ const s = stylex.create({
     marginBlock: space.lg,
     marginInline: 0,
   },
+  // Display maths is indented the way a quotation is. It is a held-out thing,
+  // and holding it out is most of what makes it readable.
   display: {
     color: color.ink,
     display: 'grid',
@@ -324,7 +375,8 @@ const s = stylex.create({
       default: 'visible',
       '@media (max-width: 34rem)': 'auto',
     },
-    rowGap: space.xs,
+    paddingInlineStart: space.md,
+    rowGap: space.sm,
   },
   inline: {
     fontFamily: font.text,
@@ -343,7 +395,8 @@ const s = stylex.create({
   lhs: {
     color: color.ink,
     fontSize: size.lead,
-    paddingBlockEnd: space.hair,
+    paddingBlockEnd: space.xs,
+    paddingInlineStart: space.md,
   },
   row: {
     alignItems: 'baseline',
@@ -354,7 +407,7 @@ const s = stylex.create({
       default: 'max-content 1fr',
       '@media (max-width: 34rem)': '1fr',
     },
-    paddingInlineStart: space.md,
+    paddingInlineStart: space.line,
     rowGap: 0,
   },
   says: {
@@ -367,6 +420,9 @@ const s = stylex.create({
     color: color.faint,
     fontSize: size.micro,
     lineHeight: leading.snug,
+    maxWidth: '28rem',
     paddingBlockStart: space.xs,
+    paddingInlineStart: space.md,
+    textWrap: 'pretty',
   },
 });

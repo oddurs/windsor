@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 
 import { color, font, size, space, term } from '@/design/tokens.stylex';
 
+import { isColumnHeader, paint } from './paint';
+
 // Two readers, and neither of them invents anything.
 //
 // The first walks C++ and marks what the language already distinguishes. The
@@ -169,20 +171,51 @@ function readAnsi(source: string) {
   return runs;
 }
 
-// A number is a number, in a header or in a column of output, so the rule that
-// paints them in the source paints them here too. Only where the program left
-// the text unpainted — anywhere it chose a colour, its choice stands.
-const digits = /(\d[\d.,:\-]*\d|\d)/;
+const PAINT = {
+  number: 'amber',
+  unit: 'fog',
+  aside: 'fog',
+  chrome: 'fog',
+  timing: 'sky',
+  shout: 'shout',
+  punctuation: 'punctuation',
+  text: 'plain',
+} as const;
 
-function figures(text: string) {
-  return text.split(digits).map((part, i) =>
-    digits.test(part) && /\d/.test(part) ? (
-      <span key={i} {...stylex.props(s.amber)}>
-        {part}
-      </span>
-    ) : (
-      part
-    ),
+const ANSI = /\u001b\[[0-9;]*m/;
+
+function Row({ row }: { row: string }) {
+  // A header row is a label for a column and not a thing in it, so it recedes
+  // whole rather than word by word.
+  if (!ANSI.test(row) && isColumnHeader(row)) {
+    return <span {...stylex.props(s.token, s.fog)}>{row}</span>;
+  }
+  return (
+    <>
+      {readAnsi(row).map((run, i) => {
+        const chosen = run.ink.hue !== null || run.ink.bold || run.ink.dim;
+        if (chosen) {
+          return (
+            <span
+              key={i}
+              {...stylex.props(
+                s.token,
+                run.ink.hue !== null ? s[hues[run.ink.hue] ?? 'plain'] : undefined,
+                run.ink.dim && s.fog,
+                run.ink.bold && s.bold,
+              )}
+            >
+              {run.text}
+            </span>
+          );
+        }
+        return paint(run.text).map((piece, j) => (
+          <span key={`${i}-${j}`} {...stylex.props(s.token, s[PAINT[piece.paint]])}>
+            {piece.text}
+          </span>
+        ));
+      })}
+    </>
   );
 }
 
@@ -206,19 +239,10 @@ export function Output({
       <div {...stylex.props(s.centre)}>
         <pre {...stylex.props(s.block, s.terminal)}>
           <code>
-            {readAnsi(children).map((run, i) => (
-              <span
-                key={i}
-                {...stylex.props(
-                  s.token,
-                  run.ink.hue !== null ? s[hues[run.ink.hue] ?? 'plain'] : undefined,
-                  run.ink.dim && s.fog,
-                  run.ink.bold && s.bold,
-                )}
-              >
-                {run.ink.hue === null && !run.ink.bold && !run.ink.dim
-                  ? figures(run.text)
-                  : run.text}
+            {children.split('\n').map((row, i, all) => (
+              <span key={i}>
+                <Row row={row} />
+                {i < all.length - 1 ? '\n' : ''}
               </span>
             ))}
           </code>
@@ -299,6 +323,7 @@ const s = stylex.create({
   plain: { color: term.text },
   bright: { color: term.bright },
   bold: { color: term.bright, fontWeight: 600 },
+  shout: { color: term.bright, fontWeight: 600 },
   fog: { color: term.fog },
   coral: { color: term.coral },
   mint: { color: term.mint },

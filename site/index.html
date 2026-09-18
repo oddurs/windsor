@@ -43,7 +43,8 @@
   code { font: 0.875em var(--mono); }
 
   .player { background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.75rem 0 0.5rem; position: sticky; top: 0; z-index: 1; }
-  .controls { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .controls { align-items: center; display: flex; gap: 0.5rem; }
+  @media (max-width: 30rem) { .wide { display: none; } .controls button { padding: 0 0.75rem; } }
   button {
     background: none;
     border: 1px solid var(--rule);
@@ -64,6 +65,14 @@
   .phases span { border-left: 1px solid var(--rule); overflow: hidden; padding-left: 0.25rem; }
   .hint { color: var(--muted); font-size: 0.875rem; margin: 1rem 0 0; }
 
+  .scope { cursor: crosshair; margin: 0; position: relative; }
+  .scope canvas { background: var(--raised); border: 1px solid var(--rule); border-radius: 2px; box-sizing: border-box; display: block; height: 7.5rem; width: 100%; }
+  .scope .head { background: var(--ink); bottom: 0; left: 0; pointer-events: none; position: absolute; top: 0; width: 1px; }
+  .scope b { color: var(--muted); font: 0.6875rem/1 var(--mono); left: 0.5rem; position: absolute; top: 0.5rem; }
+  .scope + .scope { margin-top: 0.5rem; }
+  .scope.idle { cursor: pointer; opacity: 0.4; }
+  .scope.idle:hover { opacity: 0.7; }
+
   pre {
     background: var(--raised);
     border: 1px solid var(--rule);
@@ -74,13 +83,19 @@
     padding: 1rem 1.25rem;
   }
   pre:not([hidden]) ~ pre { border-top: none; }
+  pre[data-from]::before { color: var(--faint); content: attr(data-from); display: block; font-size: 0.6875rem; margin-bottom: 0.75rem; }
+  pre[data-from^="./"]::before { content: "$ " attr(data-from); }
   pre i { color: var(--faint); font-style: normal; }
   mark { background: var(--mark); color: inherit; }
   figure { margin: 1.5rem 0; }
   figcaption { color: var(--faint); font-size: 0.8125rem; padding-top: 0.5rem; }
 
-  .banks { margin: 1.5rem 0; }
-  .bank { border-bottom: 1px solid var(--rule); height: 3.25rem; margin-top: 0.75rem; position: relative; }
+  .banks { margin: 1.5rem 0 0.75rem; position: relative; }
+  .banks .head { background: var(--ink); bottom: 0; left: 0; opacity: 0.35; position: absolute; top: 0; width: 1px; }
+  .bank.mute span { opacity: 0.2; }
+  .listen { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .listen button { font-size: 0.75rem; height: 2rem; padding: 0 0.75rem; }
+  .bank { border-bottom: 1px solid var(--rule); height: 3.25rem; position: relative; }
   .bank em { color: var(--faint); font: normal 0.6875rem/1 var(--mono); }
   .bank span {
     border-left: 1px solid var(--ink);
@@ -97,16 +112,15 @@
 </style>
 
 <h1>windsor</h1>
-<p class="tagline">
-  A Ford 302 V8, written in C++. It has no graphics and it moves nothing. It
-  turns over, burns fuel that does not exist, and sounds like this.
-</p>
+<p class="tagline">A Ford 302 V8, written in C++23, for the sound.</p>
+
+<figure class="scope" id="scope"><canvas></canvas><div class="head"></div></figure>
 
 <div class="player">
   <div class="controls">
     <button id="play" type="button" aria-label="Play"><svg viewBox="0 0 10 10" width="10" height="10"><path d="M1 0l9 5-9 5z"/></svg></button>
-    <button type="button" data-fit="cross" aria-pressed="true">cross-plane crank</button>
-    <button type="button" data-fit="flat" aria-pressed="false">flat-plane crank</button>
+    <button type="button" data-fit="cross" aria-pressed="true">cross-plane<span class="wide"> crank</span></button>
+    <button type="button" data-fit="flat" aria-pressed="false">flat-plane<span class="wide"> crank</span></button>
   </div>
   <div class="track"><div id="run"></div></div>
   <div class="phases">
@@ -114,41 +128,32 @@
   </div>
 </div>
 <p class="hint">
-  Nothing in it is a sample. Every pressure wave in those nine seconds was
-  computed, from a bore, a stroke, a camshaft and a crankshaft. Press play,
-  then fit the other crank while it runs.
+  Nine seconds of an engine that does not exist. Nothing in it is a sample:
+  every pressure wave was computed, from a bore, a stroke, a camshaft and a
+  crankshaft. Press play, then fit the other crankshaft while it runs.
 </p>
 
 <audio data-crank="cross" src="windsor.m4a" preload="metadata"></audio>
 <audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
 
-<h2>An engine, written down</h2>
+<h2>The question</h2>
 <p>
-  The source is meant to be read the way a shop manual is. You give it what
-  Ford's drawings give, in the units Ford used, and a bore is a different type
-  from a stroke, so the compiler will not let you swap them.
+  A Mustang burbles. A Ferrari shrieks. Both are 90° V8s, and I wanted to know
+  why they sound nothing alike. Not well enough to describe it. Well enough to
+  point at the part.
 </p>
-<figure>
-<pre data-from="include/engine/windsor.hpp">inline constexpr Geometry short_block() {
-    return Geometry{
-        Bore{4.000_in},            <i>// standard, before any overbore</i>
-        Stroke{3.000_in},
-        RodLength{5.090_in},       <i>// the C8OE rod. NOT the 289's, which is</i>
-                                   <i>// 5.155 in: Ford shortened it by 0.065 when</i>
-                                   <i>// the stroke grew from 2.870 to 3.000,</i>
-                                   <i>// because half of that 0.130 of extra</i>
-                                   <i>// stroke has to come out of the rod or the</i>
-                                   <i>// piston comes out of the top of the block</i></pre>
-<pre data-from="./windsor spec">  displacement         301.6 cu in             4942 cc</pre>
-<figcaption>What went in, and one line of what <code>./windsor spec</code> worked out from it. Ford rounded up.</figcaption>
-</figure>
-
-<h2>Why a Mustang does not sound like a Ferrari</h2>
 <p>
-  Both are V8s, and both fire evenly, once every 90° of rotation. The
-  difference is one part. Look down the nose of the crankshaft and its four
-  throws make either a cross or a line. This is the program's own drawing of
-  the one fitted now:
+  The usual answer is that the American engine fires unevenly. It does not.
+  Both fire once every 90° of rotation, eight times a cycle, perfectly spaced.
+  At the flywheel the two keep identical time.
+</p>
+
+<h2>What a manifold hears</h2>
+<p>
+  An engine does not exhale through its flywheel. It exhales through two
+  exhaust manifolds, and each one is bolted to four cylinders and hears only
+  those four. Which of them fire when is decided by one part: the crankshaft,
+  whose four throws, seen from the nose, make either a cross or a line.
 </p>
 <figure>
 <pre data-crank="cross" data-from="./windsor spec">                   O
@@ -165,24 +170,54 @@
                    .
                    .
                    O</pre>
+<figcaption>The program's own drawing of the crank that is fitted now.</figcaption>
 </figure>
 <p>
-  An engine does not exhale through its flywheel. It exhales through two
-  exhaust manifolds, and each one hears only its own four cylinders. This is
-  when each bank's cylinders fire, over two cycles:
+  Here is the firing of each bank, two cycles of it, slowed until it can be
+  counted. Listen to both banks together, then to one alone.
 </p>
 <div class="banks" aria-hidden="true">
   <div class="bank" data-bank="right"><em>right bank</em></div>
   <div class="bank" data-bank="left"><em>left bank</em></div>
+  <div class="head" hidden></div>
+</div>
+<div class="listen">
+  <button type="button" data-listen="both" aria-pressed="false">both banks</button>
+  <button type="button" data-listen="right" aria-pressed="false">right alone</button>
+  <button type="button" data-listen="left" aria-pressed="false">left alone</button>
 </div>
 <p data-crank="cross">
-  On the cross, a bank coughs twice in quick succession, waits three quarters
-  of a turn, and coughs again. That limp is the burble. Now fit the flat crank.
+  Together they tick evenly. Alone, a bank coughs twice in quick succession,
+  waits three quarters of a turn, and coughs again. That limp, in each pipe,
+  out of step with the other, is the burble. Now fit the flat crank and listen
+  to one bank again.
 </p>
 <p data-crank="flat" hidden>
-  On the flat crank each bank breathes evenly. The limp is gone, and the
-  burble went with it. Same block, same cam, same nine seconds.
+  On the flat crank a bank alone is as even as the whole engine. Nothing
+  limps, so nothing burbles. Same block, same heads, same cam.
 </p>
+
+<h2>What one tailpipe looks like</h2>
+<p>
+  The picture at the top of the page is the recording from one tailpipe: time
+  runs left to right, pitch runs upward to 500 Hz, and each rising line is a
+  harmonic of the engine's speed. Here are both cranks, computed in your
+  browser from the same two files you have been listening to.
+</p>
+<figure class="scope" data-scope="cross"><canvas></canvas><div class="head"></div><b>cross-plane</b></figure>
+<figure class="scope idle" data-scope="flat"><canvas></canvas><div class="head"></div><b>flat-plane</b></figure>
+<p>
+  The flat crank draws a clean ladder. The cross draws the same ladder with
+  more rungs between: energy at half orders, the mark of a pulse train that
+  takes two turns of the crank to repeat instead of one. The program measures
+  it, on one bank, at idle:
+</p>
+<figure>
+<pre data-from="./windsor verify">  cross-plane bank, half-order share          0.6983          at least 0.3    ok
+  flat-plane bank, half-order share           0.0009409       0 to 0.1        ok
+  the cross-plane bank carries far more of it 742x                            ok
+  that ratio is the entire project, and it came out of four throw angles</pre>
+</figure>
 
 <h2>Nobody typed in the firing order</h2>
 <p>
@@ -226,23 +261,63 @@
   firing order         <span class="order">1-5-2-6-3-7-4-8</span>
   right bank   cyl 1 2 3 4   fires at   180 - 180 - 180 - 180
   left  bank   cyl 5 6 7 8   fires at   180 - 180 - 180 - 180</pre>
-<figcaption data-crank="cross">The source, and beneath it what the program printed.</figcaption>
-<figcaption data-crank="flat" hidden>The source, and beneath it what the program printed. Marked: everything that differs from the cross.</figcaption>
+<figcaption data-crank="flat" hidden>Marked: everything that differs from the cross-plane crank.</figcaption>
 </figure>
 <p>
   1-5-4-2-6-3-7-8 is cast into the intake manifold of every 302 Ford built
-  in 1968. It is not an input here. The program is handed the forging and the
-  order falls out, and the limp with it, and the sound with that.
+  in 1968. It is not an input here. Typing it in would have taken a second and
+  ended the project, because a program that has been told the answer cannot
+  surprise you. It is handed the forging, and the order falls out, and the
+  limp with it, and the sound with that.
 </p>
 
-<h2>And it makes the power Ford said it did</h2>
+<h2>The rest is written the same way</h2>
+<p>
+  The source is meant to be read the way a shop manual is. You give it what
+  Ford's drawings give, in the units Ford used, and a bore is a different type
+  from a stroke, so the compiler checks the machinist's work.
+</p>
+<figure>
+<pre data-from="include/engine/windsor.hpp">inline constexpr Geometry short_block() {
+    return Geometry{
+        Bore{4.000_in},            <i>// standard, before any overbore</i>
+        Stroke{3.000_in},
+        RodLength{5.090_in},       <i>// the C8OE rod. NOT the 289's, which is</i>
+                                   <i>// 5.155 in: Ford shortened it by 0.065 when</i>
+                                   <i>// the stroke grew from 2.870 to 3.000,</i>
+                                   <i>// because half of that 0.130 of extra</i>
+                                   <i>// stroke has to come out of the rod or the</i>
+                                   <i>// piston comes out of the top of the block</i></pre>
+<pre data-from="./windsor spec">  displacement         301.6 cu in             4942 cc</pre>
+<figcaption>Ford rounded up.</figcaption>
+</figure>
+<p>
+  Behind that, each cylinder is an open thermodynamic system integrated in
+  crank angle: crank-slider kinematics, Wiebe combustion, Woschni heat loss,
+  compressible flow past the valves. The exhaust is a digital waveguide.
+  Inside the engine everything is SI, and inches exist only where a person
+  types them. It is header-only C++23 on the standard library and nothing
+  else, and it should still build in fifteen years.
+</p>
+
+<h2>Is it the engine Ford sold</h2>
 <figure>
 <pre data-from="./windsor dyno">  peak torque   307 lb-ft at 1985 rpm
   peak power    206 hp    at 4994 rpm
 
   Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400, gross.
   Nothing here was fitted to those numbers.</pre>
+<pre data-from="./windsor verify">  63 checks, all of them true.</pre>
 </figure>
+<p>
+  Close, and wrong in a way I can name: the curve is too broad, with torque
+  peaking about 400 rpm low and power 600 high. The missing part is intake
+  runner tuning, which I built three times and shipped none of, along with a
+  nonlinear gas solver that was verified, measured and taken out.
+  <a href="https://github.com/oddurs/windsor/blob/main/docs/reverted.md">What
+  came out, and why</a> is written down, because a limitation somebody built
+  and reverted is a result.
+</p>
 
 <h2>Why</h2>
 <p>
@@ -253,38 +328,120 @@
 </p>
 
 <footer>
-  <p><code>make &amp;&amp; ./windsor</code> &nbsp; A C++23 compiler, the standard library, and nothing else.</p>
+  <p>A C++23 compiler and <code>make</code>. There is nothing else to install.</p>
+<pre data-from="./windsor">    windsor spec        what was built, and what falls out of it
+    windsor dyno        put it on a water brake and sweep it
+    windsor run         watch it idle
+    windsor card        let it draw its own picture, as Watt did
+    windsor record      stand behind it with two microphones
+    windsor verify      check every number this project quotes</pre>
   <p>
     <a href="https://github.com/oddurs/windsor">The source</a> ·
     <a href="https://github.com/oddurs/windsor/blob/main/docs/reading-order.md">what order to read it in</a> ·
-    <a href="https://github.com/oddurs/windsor/blob/main/docs/reverted.md">what was built and taken out</a>
+    <a href="https://github.com/oddurs/windsor/blob/main/docs/changing-it.md">how to fit a different cam or crank</a>
   </p>
 </footer>
 
 <script>
-  const takes = Object.fromEntries(
-    [...document.querySelectorAll('audio')].map((a) => [a.dataset.crank, a]));
+  const all = (q) => [...document.querySelectorAll(q)];
+  const takes = Object.fromEntries(all('audio').map((a) => [a.dataset.crank, a]));
   const play = document.getElementById('play');
   const run = document.getElementById('run');
   const icon = play.querySelector('path');
   let crank = 'cross';
   let playing = false;
 
+  // ── The recording ─────────────────────────────────────────────────────────
+
   const show = () => {
     icon.setAttribute('d', playing ? 'M1 0h3v10H1zM6 0h3v10H6z' : 'M1 0l9 5-9 5z');
     play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
   };
 
+  const place = () => {
+    const a = takes[crank];
+    const at = a.duration ? a.currentTime / a.duration : 0;
+    run.style.width = `${at * 100}%`;
+    for (const head of all('.scope .head')) head.style.left = `${at * 100}%`;
+  };
+
+  const start = () => {
+    hush();
+    playing = true;
+    takes[crank].play();
+    // Once one take is playing the other is worth having ready.
+    const other = takes[crank === 'cross' ? 'flat' : 'cross'];
+    if (other.readyState === 0) other.load();
+    show();
+    const follow = () => { place(); if (playing) requestAnimationFrame(follow); };
+    follow();
+  };
+
+  const stop = () => {
+    playing = false;
+    takes[crank].pause();
+    show();
+  };
+
+  // Fitting the other crank keeps your place in the recording: the same nine
+  // seconds, the same engine, one part changed. Everything on the page that
+  // depends on the crank changes with it.
+  const fit = (next) => {
+    if (next === crank) return;
+    const from = takes[crank];
+    const to = takes[next];
+    to.currentTime = from.currentTime;
+    from.pause();
+    if (playing) to.play();
+    crank = next;
+    for (const el of all('[data-crank]:not(audio)')) el.hidden = el.dataset.crank !== crank;
+    for (const b of all('[data-fit]')) b.setAttribute('aria-pressed', b.dataset.fit === crank);
+    for (const s of all('[data-scope]')) s.classList.toggle('idle', s.dataset.scope !== crank);
+    draw();
+    paint();
+  };
+
+  play.onclick = () => (playing ? stop() : start());
+  for (const b of all('[data-fit]')) b.onclick = () => fit(b.dataset.fit);
+
+  for (const a of Object.values(takes)) {
+    a.onended = () => {
+      playing = false;
+      a.currentTime = 0;
+      show();
+      place();
+    };
+  }
+
+  // A spectrogram is also a scrub bar. Clicking the crank that is not fitted
+  // fits it first.
+  for (const scope of all('.scope')) {
+    scope.onclick = (event) => {
+      if (scope.dataset.scope) fit(scope.dataset.scope);
+      const box = scope.getBoundingClientRect();
+      const a = takes[crank];
+      if (a.duration) a.currentTime = ((event.clientX - box.left) / box.width) * a.duration;
+      place();
+    };
+  }
+
+  // The phases are the script in apps/record.cpp, each as wide as it is long.
+  for (const phase of all('.phases span')) phase.style.flex = phase.dataset.seconds;
+
+  // ── The banks ─────────────────────────────────────────────────────────────
+  //
   // The ticks are drawn from the firing order the program printed, 90° apart,
   // cylinders 1-4 on the right bank. Two cycles, so the rhythm can be seen.
+
+  const order = () => document.querySelector(`pre[data-crank="${crank}"] .order`)
+    .textContent.split('-').map(Number);
+
   const draw = () => {
-    const order = document.querySelector(`pre[data-crank="${crank}"] .order`)
-      .textContent.split('-').map(Number);
-    for (const bank of document.querySelectorAll('.bank')) {
+    for (const bank of all('.bank')) {
       const right = bank.dataset.bank === 'right';
       bank.replaceChildren(bank.querySelector('em'));
       for (let cycle = 0; cycle < 2; cycle++) {
-        order.forEach((cylinder, slot) => {
+        order().forEach((cylinder, slot) => {
           if ((cylinder <= 4) !== right) return;
           const tick = document.createElement('span');
           tick.textContent = cylinder;
@@ -295,55 +452,154 @@
     }
   };
 
-  // Fitting the other crank keeps your place in the recording: the same nine
-  // seconds, the same engine, one part changed.
-  const fit = (next) => {
-    if (next === crank) return;
-    const from = takes[crank];
-    const to = takes[next];
-    to.currentTime = from.currentTime;
-    from.pause();
-    if (playing) to.play();
-    crank = next;
-    for (const el of document.querySelectorAll('[data-crank]:not(audio)'))
-      el.hidden = el.dataset.crank !== crank;
-    for (const b of document.querySelectorAll('[data-fit]'))
-      b.setAttribute('aria-pressed', b.dataset.fit === crank);
-    draw();
+  // The same firing order as a metronome: one click per cylinder, a cycle
+  // every 2.4 seconds, each bank in its own ear. These are clicks and not the
+  // engine. At idle the real thing goes far too fast to count, and exactly
+  // fast enough to hear as a texture.
+  const Context = window.AudioContext || window.webkitAudioContext;
+  const context = new Context();
+  const slotSeconds = 0.3;
+  const sweep = document.querySelector('.banks .head');
+  let listening = null;
+  let began = 0;
+  let slot = 0;
+
+  const click = (when, right) => {
+    const tone = context.createOscillator();
+    const level = context.createGain();
+    const side = context.createStereoPanner();
+    tone.frequency.setValueAtTime(140, when);
+    tone.frequency.exponentialRampToValueAtTime(55, when + 0.09);
+    level.gain.setValueAtTime(0.0001, when);
+    level.gain.exponentialRampToValueAtTime(0.6, when + 0.004);
+    level.gain.exponentialRampToValueAtTime(0.0001, when + 0.11);
+    side.pan.value = right ? 0.7 : -0.7;
+    tone.connect(level).connect(side).connect(context.destination);
+    tone.start(when);
+    tone.stop(when + 0.12);
   };
 
-  play.onclick = () => {
-    playing = !playing;
-    if (playing) {
-      takes[crank].play();
-      // Once one take is playing the other is worth having ready.
-      const other = takes[crank === 'cross' ? 'flat' : 'cross'];
-      if (other.readyState === 0) other.load();
-    } else {
-      takes[crank].pause();
+  const beat = () => {
+    if (!listening) return;
+    const firing = order();
+    while (began + slot * slotSeconds < context.currentTime + 0.1) {
+      const right = firing[slot % 8] <= 4;
+      if (listening === 'both' || (listening === 'right') === right)
+        click(began + slot * slotSeconds, right);
+      slot++;
     }
-    show();
+    const turned = ((context.currentTime - began) / (16 * slotSeconds)) % 1;
+    sweep.style.left = `${Math.max(0, turned) * 100}%`;
+    requestAnimationFrame(beat);
   };
 
-  for (const b of document.querySelectorAll('[data-fit]'))
-    b.onclick = () => fit(b.dataset.fit);
+  const hush = () => {
+    listening = null;
+    sweep.hidden = true;
+    for (const b of all('[data-listen]')) b.setAttribute('aria-pressed', false);
+    for (const bank of all('.bank')) bank.classList.remove('mute');
+  };
 
-  for (const a of Object.values(takes)) {
-    a.ontimeupdate = () => {
-      if (a === takes[crank]) run.style.width = `${(a.currentTime / a.duration) * 100}%`;
-    };
-    a.onended = () => {
-      playing = false;
-      a.currentTime = 0;
-      run.style.width = '0';
-      show();
+  for (const b of all('[data-listen]')) {
+    b.onclick = async () => {
+      const chosen = b.dataset.listen;
+      if (listening === chosen) return hush();
+      if (playing) stop();
+      const fresh = !listening;
+      hush();
+      listening = chosen;
+      b.setAttribute('aria-pressed', true);
+      for (const bank of all('.bank'))
+        bank.classList.toggle('mute', chosen !== 'both' && bank.dataset.bank !== chosen);
+      sweep.hidden = false;
+      await context.resume();
+      if (fresh) { began = context.currentTime + 0.05; slot = 0; beat(); }
     };
   }
 
-  // The phases are the script in apps/record.cpp, each as wide as it is long.
-  for (const phase of document.querySelectorAll('.phases span'))
-    phase.style.flex = phase.dataset.seconds;
+  // ── The spectrograms ──────────────────────────────────────────────────────
+  //
+  // Computed here, from the same files the player plays, so the picture cannot
+  // disagree with the sound. One channel, because one channel is one tailpipe
+  // and one tailpipe is one bank. An 8192-point Hann window resolves about
+  // 6 Hz, which is what it takes to separate half orders on the pull.
+
+  const size = 8192;
+  const ceiling = 500;   // Hz
+  const columns = 720;
+  const spectra = {};
+
+  const window_ = Float32Array.from({ length: size },
+    (_, n) => 0.5 - 0.5 * Math.cos((2 * Math.PI * n) / size));
+
+  const transform = (re, im) => {
+    for (let i = 1, j = 0; i < size; i++) {
+      let bit = size >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; }
+    }
+    for (let span = 2; span <= size; span <<= 1) {
+      const angle = (-2 * Math.PI) / span;
+      for (let base = 0; base < size; base += span) {
+        for (let k = 0; k < span / 2; k++) {
+          const c = Math.cos(angle * k), s = Math.sin(angle * k);
+          const a = base + k, b = a + span / 2;
+          const xr = re[b] * c - im[b] * s, xi = re[b] * s + im[b] * c;
+          re[b] = re[a] - xr; im[b] = im[a] - xi;
+          re[a] += xr; im[a] += xi;
+        }
+      }
+    }
+  };
+
+  const analyse = async (src) => {
+    const file = await (await fetch(src)).arrayBuffer();
+    const audio = await context.decodeAudioData(file);
+    const pipe = audio.getChannelData(0);
+    const rows = Math.floor(ceiling / (audio.sampleRate / size));
+    const decibels = new Float32Array(columns * rows);
+    const re = new Float32Array(size), im = new Float32Array(size);
+    for (let column = 0; column < columns; column++) {
+      const centre = Math.floor((column / columns) * pipe.length);
+      for (let n = 0; n < size; n++) {
+        re[n] = (pipe[centre - size / 2 + n] ?? 0) * window_[n];
+        im[n] = 0;
+      }
+      transform(re, im);
+      for (let row = 0; row < rows; row++)
+        decibels[column * rows + row] = 10 * Math.log10(re[row] ** 2 + im[row] ** 2 + 1e-12);
+    }
+    return { rows, decibels };
+  };
+
+  const paint = () => {
+    if (!spectra.cross || !spectra.flat) return;
+    const loudest = Math.max(...Object.values(spectra).map((s) => s.decibels.reduce((m, v) => Math.max(m, v), -Infinity)));
+    const [r, g, b] = getComputedStyle(document.body).color.match(/\d+/g).map(Number);
+    for (const scope of all('.scope')) {
+      const { rows, decibels } = spectra[scope.dataset.scope ?? crank];
+      const canvas = scope.querySelector('canvas');
+      canvas.width = columns;
+      canvas.height = rows;
+      const image = new ImageData(columns, rows);
+      for (let column = 0; column < columns; column++) {
+        for (let row = 0; row < rows; row++) {
+          const level = (decibels[column * rows + row] - (loudest - 60)) / 60;
+          const at = ((rows - 1 - row) * columns + column) * 4;
+          image.data.set([r, g, b, 255 * Math.min(1, Math.max(0, level)) ** 1.5], at);
+        }
+      }
+      canvas.getContext('2d').putImageData(image, 0, 0);
+    }
+  };
+
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
 
   draw();
+  if (location.hash === '#flat') fit('flat');
+  Promise.all(Object.entries(takes).map(async ([name, a]) => {
+    spectra[name] = await analyse(a.getAttribute('src'));
+  })).then(paint);
 </script>
 </html>

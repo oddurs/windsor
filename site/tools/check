@@ -19,9 +19,11 @@ subprocess.run(['make'], cwd=root, check=True, capture_output=True)
 
 def original(where):
     if where.startswith('./'):
-        run = subprocess.run(where.split(), cwd=root, check=True,
+        # Run bare, the program prints its usage and exits 1, which is correct
+        # of it and not a failure of this.
+        run = subprocess.run(where.split(), cwd=root, check=where != './windsor',
                              capture_output=True, text=True)
-        return re.sub(r'\033\[[0-9;]*m', '', run.stdout)
+        return re.sub(r'\033\[[0-9;]*m', '', run.stdout + run.stderr)
     return (root / where).read_text()
 
 

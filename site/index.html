@@ -5,20 +5,27 @@
 <meta name="color-scheme" content="light dark">
 <title>windsor</title>
 <meta name="description" content="A Ford 302 V8, written in C++23, for the sound. Change the crankshaft and hear it change.">
+<meta property="og:title" content="windsor">
+<meta property="og:description" content="A Ford 302 V8, written in C++23, for the sound. Change the crankshaft and hear it change.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2v12M2 8h12' stroke='%23777' stroke-width='1' stroke-dasharray='1 1.5'/%3E%3Cg fill='%23777'%3E%3Ccircle cx='8' cy='2' r='1.6'/%3E%3Ccircle cx='8' cy='14' r='1.6'/%3E%3Ccircle cx='2' cy='8' r='1.6'/%3E%3Ccircle cx='14' cy='8' r='1.6'/%3E%3C/g%3E%3C/svg%3E">
 
 <!--
-  One file, written by hand, and nothing to build. Every <pre data-from> below
-  is a copy of something the source says or the program prints, and copies rot,
-  so tools/check compares each line of them against the real thing and the
-  page is not published unless they agree.
+  One file, written by hand, and nothing to build. Every block below that
+  carries a data-from attribute is a copy of something the source says or the
+  program prints, and copies rot, so tools/check compares each line of them
+  against the real thing and the page is not published unless they agree.
 -->
 
 <style>
+  /* Greys, not colours. The subject is a cast-iron block and a paper shop
+     manual, and neither has ever needed a hue to be understood. The one
+     exception marks what differs between two crankshafts. */
   :root {
     --paper: #fcfcfb; --raised: #f5f5f3; --ink: #141414;
     --muted: #5f5f5d; --faint: #737370; --rule: #e4e4e1; --mark: #f1e3b4;
     --text: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --hang: 0rem;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -26,106 +33,186 @@
       --muted: #9a9a96; --faint: #7d7d79; --rule: #272727; --mark: #4a3f1a;
     }
   }
+  /* Where there is room, the panels hang outside the column by exactly their
+     own padding, so that code and prose share one left edge. */
+  @media (min-width: 46rem) { :root { --hang: 2rem; } }
 
   body {
     background: var(--paper);
     color: var(--ink);
-    font: 1rem/1.65 var(--text);
+    font: 1.0625rem/1.65 var(--text);
     margin: 0 auto;
-    max-width: 40rem;
-    padding: 5rem 1.25rem;
+    max-width: 38rem;
+    padding: 6rem 1.25rem 5rem;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
   }
-  h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.024em; line-height: 1.1; margin: 0; }
-  h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; margin: 4.5rem 0 0; }
+  ::selection { background: var(--mark); }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  h1 { font-size: 2.25rem; font-weight: 600; letter-spacing: -0.028em; line-height: 1.1; margin: 0; }
+  header { align-items: baseline; display: flex; justify-content: space-between; }
+  header a { color: var(--muted); font-size: 0.875rem; }
+  header a:hover { color: var(--ink); }
+  h2 { font-size: 1.3125rem; font-weight: 600; letter-spacing: -0.016em; line-height: 1.25; margin: 5rem 0 0; text-wrap: balance; }
   p { margin: 1.5rem 0; text-wrap: pretty; }
-  .tagline { font-size: 1.0625rem; margin: 0.75rem 0 1.5rem; }
-  a { color: inherit; text-underline-offset: 0.2em; }
+  .tagline { color: var(--muted); font-size: 1.1875rem; line-height: 1.45; margin: 0.75rem 0 2.5rem; }
+  a { color: inherit; text-decoration-color: var(--faint); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:hover { text-decoration-color: var(--ink); }
   code { font: 0.875em var(--mono); }
 
-  .player { background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.75rem 0 0.5rem; position: sticky; top: 0; z-index: 1; }
-  .controls { align-items: center; display: flex; gap: 0.5rem; }
-  @media (max-width: 30rem) { .wide { display: none; } .controls button { padding: 0 0.75rem; } }
-  button {
-    background: none;
-    border: 1px solid var(--rule);
-    border-radius: 2px;
-    color: var(--muted);
-    cursor: pointer;
-    font: 0.875rem/1 var(--mono);
-    height: 2.5rem;
-    padding: 0 1rem;
+  /* ── The player ─────────────────────────────────────────────────────────── */
+
+  /* Monospace is for what a compiler or a terminal produced. Everything a
+     person reads as interface is set in the text face. */
+  .player { background: var(--paper); padding-top: 0.75rem; position: sticky; top: 0; z-index: 1; }
+  .controls { align-items: center; display: flex; gap: 0.875rem; }
+  .label { color: var(--faint); font-size: 0.8125rem; }
+  button { background: none; border: none; color: inherit; cursor: pointer; font: inherit; padding: 0; }
+  #play {
+    align-items: center;
+    background: var(--ink);
+    border-radius: 50%;
+    color: var(--paper);
+    display: flex;
+    flex: none;
+    height: 2.25rem;
+    justify-content: center;
+    transition: transform 120ms;
+    width: 2.25rem;
   }
-  button:hover { border-color: var(--ink); }
-  button[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
-  #play { color: var(--ink); padding: 0; width: 2.5rem; }
-  #play svg { fill: currentColor; vertical-align: middle; }
+  #play:hover { transform: scale(1.06); }
+  #play:active { transform: scale(0.96); }
+  #play svg { fill: currentColor; }
+  .choice { background: var(--raised); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--rule); display: inline-flex; padding: 3px; }
+  .choice button { border-radius: 999px; color: var(--muted); font-size: 0.8125rem; line-height: 1; padding: 0.4375rem 0.875rem; transition: color 120ms; white-space: nowrap; }
+  .choice button:hover { color: var(--ink); }
+  .choice button[aria-pressed="true"] { background: var(--paper); box-shadow: 0 0 0 1px var(--rule), 0 1px 2px rgb(0 0 0 / 0.06); color: var(--ink); }
+  #clock { color: var(--faint); font-size: 0.8125rem; font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; }
   .track { background: var(--rule); height: 1px; margin-top: 0.75rem; }
   #run { background: var(--ink); height: 1px; width: 0; }
-  .phases { color: var(--faint); display: flex; font: 0.6875rem/1 var(--mono); padding-top: 0.4rem; }
-  .phases span { border-left: 1px solid var(--rule); overflow: hidden; padding-left: 0.25rem; }
-  .hint { color: var(--muted); font-size: 0.875rem; margin: 1rem 0 0; }
+  .hint { color: var(--muted); font-size: 0.9375rem; margin: 1.25rem 0 0; }
+  @media (max-width: 30rem) { .controls .label, #clock i { display: none; } }
+  #clock i { font-style: normal; }
+
+  /* ── The spectrograms ───────────────────────────────────────────────────── */
 
   .scope { cursor: crosshair; margin: 0; position: relative; }
-  .scope canvas { background: var(--raised); border: 1px solid var(--rule); border-radius: 2px; box-sizing: border-box; display: block; height: 7.5rem; width: 100%; }
-  .scope .head { background: var(--ink); bottom: 0; left: 0; pointer-events: none; position: absolute; top: 0; width: 1px; }
-  .scope b { color: var(--muted); font: 0.6875rem/1 var(--mono); left: 0.5rem; position: absolute; top: 0.5rem; }
-  .scope + .scope { margin-top: 0.5rem; }
-  .scope.idle { cursor: pointer; opacity: 0.4; }
-  .scope.idle:hover { opacity: 0.7; }
-
-  pre {
+  .scope canvas {
     background: var(--raised);
     border: 1px solid var(--rule);
     border-radius: 2px;
-    font: 0.8125rem/1.6 var(--mono);
-    margin: 0;
+    box-sizing: border-box;
+    display: block;
+    height: 8rem;
+    opacity: 0;
+    transition: opacity 600ms;
+    width: 100%;
+  }
+  .scope.drawn canvas { opacity: 1; }
+  .scope .head { background: var(--ink); bottom: 1px; left: 0; opacity: 0; pointer-events: none; position: absolute; top: 1px; width: 1px; }
+  .scope.live .head { opacity: 1; }
+  .scope b, .scope small { background: var(--raised); border-radius: 2px; font-size: 0.75rem; line-height: 1; padding: 0.1875rem 0.3125rem; position: absolute; top: 0.5rem; }
+  .scope b { color: var(--faint); font-weight: normal; left: 0.5rem; }
+  .scope.live b { color: var(--ink); }
+  .scope small { color: var(--faint); right: 0.5rem; }
+  .scope + .scope { margin-top: 0.5rem; }
+  .phases { color: var(--faint); display: flex; font-size: 0.75rem; line-height: 1; padding-top: 0.5rem; }
+  .phases span { border-left: 1px solid var(--rule); overflow: hidden; padding: 0.125rem 0 0.125rem 0.375rem; }
+
+  /* ── Source and output ──────────────────────────────────────────────────── */
+
+  figure { margin: 2rem 0; }
+  figcaption { color: var(--faint); font-size: 0.875rem; padding-top: 0.625rem; }
+  pre {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    font: 0.78125rem/1.65 var(--mono);
+    margin: 0 calc(-1 * var(--hang));
     overflow-x: auto;
-    padding: 1rem 1.25rem;
+    padding: 1.125rem 1rem 1.25rem calc(max(var(--hang), 1rem) - 1px);
+    tab-size: 4;
   }
-  pre:not([hidden]) ~ pre { border-top: none; }
-  pre[data-from]::before { color: var(--faint); content: attr(data-from); display: block; font-size: 0.6875rem; margin-bottom: 0.75rem; }
-  pre[data-from^="./"]::before { content: "$ " attr(data-from); }
-  pre i { color: var(--faint); font-style: normal; }
-  mark { background: var(--mark); color: inherit; }
-  figure { margin: 1.5rem 0; }
-  figcaption { color: var(--faint); font-size: 0.8125rem; padding-top: 0.5rem; }
-
-  .banks { margin: 1.5rem 0 0.75rem; position: relative; }
-  .banks .head { background: var(--ink); bottom: 0; left: 0; opacity: 0.35; position: absolute; top: 0; width: 1px; }
-  .bank.mute span { opacity: 0.2; }
-  .listen { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .listen button { font-size: 0.75rem; height: 2rem; padding: 0 0.75rem; }
-  .bank { border-bottom: 1px solid var(--rule); height: 3.25rem; position: relative; }
-  .bank em { color: var(--faint); font: normal 0.6875rem/1 var(--mono); }
-  .bank span {
-    border-left: 1px solid var(--ink);
-    bottom: 0;
+  pre[data-from]::before {
+    border-bottom: 1px solid var(--rule);
     color: var(--faint);
-    font: 0.6875rem/1 var(--mono);
-    height: 1.5rem;
-    padding-left: 0.25rem;
-    position: absolute;
+    content: attr(data-from);
+    display: block;
+    font-size: 0.6875rem;
+    margin: -1.125rem -1rem 1rem calc(1px - max(var(--hang), 1rem));
+    padding: 0.625rem 1rem 0.625rem calc(max(var(--hang), 1rem) - 1px);
   }
+  pre[data-from^="./"]::before { content: "$ " attr(data-from); }
+  figure > pre + pre, .swap + .swap pre { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+  pre i { color: var(--faint); font-style: normal; }
+  /* The drawing is printed with thirteen columns of indent. It keeps them,
+     and is centred as a block by giving half of them back. */
+  pre.art { text-align: center; }
+  pre.art::before { text-align: left; }
+  pre.art span { display: inline-block; margin-left: -13ch; text-align: left; }
+  pre b { font-weight: 600; }
+  mark { background: var(--mark); border-radius: 1px; color: inherit; padding: 0.1em 0; }
 
-  footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.875rem; margin-top: 4.5rem; padding-top: 1.5rem; }
-  footer code { color: var(--ink); }
+  /* Both cranks occupy the same cell and only one is visible, so fitting the
+     other never moves the sentence you were reading. */
+  .swap { display: grid; }
+  .swap > * { grid-area: 1 / 1; min-width: 0; }
+  .swap > [hidden] { display: block !important; visibility: hidden; }
+  .swap > p { margin: 0; }
+  div.swap:has(> p) { margin: 1.5rem 0; }
+
+  /* ── The banks ──────────────────────────────────────────────────────────── */
+
+  .banks { margin: 2rem 0 0; position: relative; }
+  .banks .head { background: var(--faint); bottom: 0; left: 0; position: absolute; top: 0; width: 1px; }
+  .bank { border-bottom: 1px solid var(--rule); height: 3.75rem; position: relative; transition: opacity 200ms; }
+  .bank + .bank { margin-top: 0.75rem; }
+  .bank.mute { opacity: 0.25; }
+  .bank em { color: var(--muted); font-size: 0.75rem; font-style: normal; line-height: 1; position: absolute; top: 0; }
+  .bank .tick { background: var(--ink); bottom: 0; height: 0.875rem; position: absolute; width: 1px; }
+  .bank .tick::before {
+    bottom: 1.125rem;
+    color: var(--faint);
+    content: attr(data-cylinder);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    position: absolute;
+    transform: translateX(-50%);
+  }
+  .bank .tick.lit { box-shadow: 0 0 0 1px var(--ink); }
+  .bank .tick.lit::before { color: var(--ink); font-weight: 600; }
+  .bank .gap { bottom: 0.1875rem; color: var(--faint); font-size: 0.6875rem; line-height: 1; position: absolute; text-align: center; }
+  .bank .gap.odd { color: var(--ink); }
+  @media (max-width: 30rem) { .bank .gap { font-size: 0.5625rem; } }
+  .listen { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem 0.875rem; margin-top: 1rem; }
+
+  footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.9375rem; margin-top: 5rem; padding-top: 1rem; }
 </style>
 
-<h1>windsor</h1>
+<header>
+  <h1>windsor</h1>
+  <a href="https://github.com/oddurs/windsor">Source on GitHub</a>
+</header>
 <p class="tagline">A Ford 302 V8, written in C++23, for the sound.</p>
 
-<figure class="scope" id="scope"><canvas></canvas><div class="head"></div></figure>
+<figure class="scope live" id="scope"><canvas></canvas><div class="head"></div><small>500 Hz</small></figure>
+<div class="phases">
+  <span data-seconds="2.0">idle</span><span data-seconds="1.6">cruise</span><span data-seconds="3.2">pull</span><span data-seconds="2.2">overrun</span>
+</div>
 
 <div class="player">
   <div class="controls">
-    <button id="play" type="button" aria-label="Play"><svg viewBox="0 0 10 10" width="10" height="10"><path d="M1 0l9 5-9 5z"/></svg></button>
-    <button type="button" data-fit="cross" aria-pressed="true">cross-plane<span class="wide"> crank</span></button>
-    <button type="button" data-fit="flat" aria-pressed="false">flat-plane<span class="wide"> crank</span></button>
+    <button id="play" type="button" aria-label="Play"><svg viewBox="0 0 10 10" width="10" height="10"><path d="M2 0l8 5-8 5z"/></svg></button>
+    <span class="label">crankshaft</span>
+    <span class="choice">
+      <button type="button" data-fit="cross" aria-pressed="true">cross-plane</button>
+      <button type="button" data-fit="flat" aria-pressed="false">flat-plane</button>
+    </span>
+    <output id="clock">0:00</output>
   </div>
   <div class="track"><div id="run"></div></div>
-  <div class="phases">
-    <span data-seconds="2.0">idle</span><span data-seconds="1.6">cruise</span><span data-seconds="3.2">pull</span><span data-seconds="2.2">overrun</span>
-  </div>
 </div>
 <p class="hint">
   Nine seconds of an engine that does not exist. Nothing in it is a sample:
@@ -156,38 +243,46 @@
   whose four throws, seen from the nose, make either a cross or a line.
 </p>
 <figure>
-<pre data-crank="cross" data-from="./windsor spec">                   O
+<div class="swap">
+<pre class="art" data-crank="cross" data-from="./windsor spec"><span>                   O
                    .
                    .
              O.....+.....O
                    .
                    .
-                   O</pre>
-<pre data-crank="flat" data-from="./windsor spec --flat" hidden>                   O
+                   O</span></pre>
+<pre class="art" data-crank="flat" data-from="./windsor spec --flat" hidden><span>                   O
                    .
                    .
                    +
                    .
                    .
-                   O</pre>
-<figcaption>The program's own drawing of the crank that is fitted now.</figcaption>
+                   O</span></pre>
+</div>
+<figcaption>The program’s own drawing of the crank that is fitted now.</figcaption>
 </figure>
 <p>
-  Here is the firing of each bank, two cycles of it, slowed until it can be
-  counted. Listen to both banks together, then to one alone.
+  Here are two cycles of it, slowed until they can be counted: the whole
+  engine, and then what each manifold gets of it. Listen to the engine, then
+  to one bank alone.
 </p>
-<div class="banks" aria-hidden="true">
+<div class="banks" role="img">
+  <div class="bank" data-bank="engine"><em>the engine</em></div>
   <div class="bank" data-bank="right"><em>right bank</em></div>
   <div class="bank" data-bank="left"><em>left bank</em></div>
   <div class="head" hidden></div>
 </div>
 <div class="listen">
-  <button type="button" data-listen="both" aria-pressed="false">both banks</button>
-  <button type="button" data-listen="right" aria-pressed="false">right alone</button>
-  <button type="button" data-listen="left" aria-pressed="false">left alone</button>
+  <span class="label">listen to</span>
+  <span class="choice">
+    <button type="button" data-listen="both" aria-pressed="false">the engine</button>
+    <button type="button" data-listen="right" aria-pressed="false">right bank alone</button>
+    <button type="button" data-listen="left" aria-pressed="false">left bank alone</button>
+  </span>
 </div>
+<div class="swap">
 <p data-crank="cross">
-  Together they tick evenly. Alone, a bank coughs twice in quick succession,
+  The engine ticks evenly. Alone, a bank coughs twice in quick succession,
   waits three quarters of a turn, and coughs again. That limp, in each pipe,
   out of step with the other, is the burble. Now fit the flat crank and listen
   to one bank again.
@@ -196,16 +291,17 @@
   On the flat crank a bank alone is as even as the whole engine. Nothing
   limps, so nothing burbles. Same block, same heads, same cam.
 </p>
+</div>
 
 <h2>What one tailpipe looks like</h2>
 <p>
   The picture at the top of the page is the recording from one tailpipe: time
   runs left to right, pitch runs upward to 500 Hz, and each rising line is a
-  harmonic of the engine's speed. Here are both cranks, computed in your
+  harmonic of the engine’s speed. Here are both cranks, computed in your
   browser from the same two files you have been listening to.
 </p>
-<figure class="scope" data-scope="cross"><canvas></canvas><div class="head"></div><b>cross-plane</b></figure>
-<figure class="scope idle" data-scope="flat"><canvas></canvas><div class="head"></div><b>flat-plane</b></figure>
+<figure class="scope live" data-scope="cross"><canvas></canvas><div class="head"></div><b>cross-plane</b><small>500 Hz</small></figure>
+<figure class="scope" data-scope="flat"><canvas></canvas><div class="head"></div><b>flat-plane</b><small>500 Hz</small></figure>
 <p>
   The flat crank draws a clean ladder. The cross draws the same ladder with
   more rungs between: energy at half orders, the mark of a pulse train that
@@ -225,6 +321,7 @@
   throws, and eight rods. It is what a foundry decides, and nothing more.
 </p>
 <figure>
+<div class="swap">
 <pre data-crank="cross" data-from="include/engine/windsor.hpp">    return Crankshaft{
         90.0_deg,
         { 45.0_deg, 315.0_deg, 135.0_deg, 225.0_deg },
@@ -251,6 +348,8 @@
         <mark>0.16</mark>                       <i>// lighter: a flat crank needs less</i>
                                    <i>// counterweight, having less to cancel</i>
     };</pre>
+</div>
+<div class="swap">
 <pre data-crank="cross" data-from="./windsor spec"><i>  ---- everything above was specified. everything below came out. ----</i>
 
   firing order         <span class="order">1-5-4-2-6-3-7-8</span>
@@ -261,7 +360,8 @@
   firing order         <span class="order">1-5-2-6-3-7-4-8</span>
   right bank   cyl 1 2 3 4   fires at   180 - 180 - 180 - 180
   left  bank   cyl 5 6 7 8   fires at   180 - 180 - 180 - 180</pre>
-<figcaption data-crank="flat" hidden>Marked: everything that differs from the cross-plane crank.</figcaption>
+</div>
+<div class="swap"><figcaption data-crank="flat" hidden>Marked: everything that differs from the cross-plane crank.</figcaption></div>
 </figure>
 <p>
   1-5-4-2-6-3-7-8 is cast into the intake manifold of every 302 Ford built
@@ -274,8 +374,8 @@
 <h2>The rest is written the same way</h2>
 <p>
   The source is meant to be read the way a shop manual is. You give it what
-  Ford's drawings give, in the units Ford used, and a bore is a different type
-  from a stroke, so the compiler checks the machinist's work.
+  Ford’s drawings give, in the units Ford used, and a bore is a different type
+  from a stroke, so the compiler checks the machinist’s work.
 </p>
 <figure>
 <pre data-from="include/engine/windsor.hpp">inline constexpr Geometry short_block() {
@@ -347,22 +447,37 @@
   const takes = Object.fromEntries(all('audio').map((a) => [a.dataset.crank, a]));
   const play = document.getElementById('play');
   const run = document.getElementById('run');
+  const clock = document.getElementById('clock');
   const icon = play.querySelector('path');
   let crank = 'cross';
   let playing = false;
 
+  // The phases are the script in apps/record.cpp, each as wide as it is long,
+  // and the recording is as long as all of them.
+  let length = 0;
+  for (const phase of all('.phases span')) {
+    phase.style.flex = phase.dataset.seconds;
+    length += +phase.dataset.seconds;
+  }
+
   // ── The recording ─────────────────────────────────────────────────────────
 
   const show = () => {
-    icon.setAttribute('d', playing ? 'M1 0h3v10H1zM6 0h3v10H6z' : 'M1 0l9 5-9 5z');
+    icon.setAttribute('d', playing ? 'M1.5 0h2.5v10H1.5zM6 0h2.5v10H6z' : 'M2 0l8 5-8 5z');
     play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
   };
 
+  // The position is read from the element rather than pushed to it, because
+  // the element is the one that knows.
   const place = () => {
     const a = takes[crank];
     const at = a.duration ? a.currentTime / a.duration : 0;
     run.style.width = `${at * 100}%`;
-    for (const head of all('.scope .head')) head.style.left = `${at * 100}%`;
+    clock.innerHTML = `0:${String(Math.floor(a.currentTime)).padStart(2, '0')}<i> / 0:${String(Math.round(length)).padStart(2, '0')}</i>`;
+    for (const head of all('.scope .head')) {
+      head.style.left = `${at * 100}%`;
+      head.hidden = at === 0;
+    }
   };
 
   const start = () => {
@@ -396,13 +511,19 @@
     crank = next;
     for (const el of all('[data-crank]:not(audio)')) el.hidden = el.dataset.crank !== crank;
     for (const b of all('[data-fit]')) b.setAttribute('aria-pressed', b.dataset.fit === crank);
-    for (const s of all('[data-scope]')) s.classList.toggle('idle', s.dataset.scope !== crank);
+    for (const s of all('[data-scope]')) s.classList.toggle('live', s.dataset.scope === crank);
     draw();
     paint();
   };
 
   play.onclick = () => (playing ? stop() : start());
   for (const b of all('[data-fit]')) b.onclick = () => fit(b.dataset.fit);
+
+  addEventListener('keydown', (event) => {
+    if (event.code !== 'Space' || event.target.closest('button, a')) return;
+    event.preventDefault();
+    play.click();
+  });
 
   for (const a of Object.values(takes)) {
     a.onended = () => {
@@ -425,8 +546,6 @@
     };
   }
 
-  // The phases are the script in apps/record.cpp, each as wide as it is long.
-  for (const phase of all('.phases span')) phase.style.flex = phase.dataset.seconds;
 
   // ── The banks ─────────────────────────────────────────────────────────────
   //
@@ -437,19 +556,36 @@
     .textContent.split('-').map(Number);
 
   const draw = () => {
+    const firing = order();
+    const heard = [];
     for (const bank of all('.bank')) {
-      const right = bank.dataset.bank === 'right';
-      bank.replaceChildren(bank.querySelector('em'));
-      for (let cycle = 0; cycle < 2; cycle++) {
-        order().forEach((cylinder, slot) => {
-          if ((cylinder <= 4) !== right) return;
-          const tick = document.createElement('span');
-          tick.textContent = cylinder;
-          tick.style.left = `${((cycle * 8 + slot) / 16) * 100}%`;
-          bank.append(tick);
-        });
-      }
+      const which = bank.dataset.bank;
+      const slots = [...Array(16).keys()].filter((slot) =>
+        which === 'engine' || (firing[slot % 8] <= 4) === (which === 'right'));
+      const gaps = slots.slice(1).map((slot, i) => (slot - slots[i]) * 90);
+      const even = gaps.every((gap) => gap === gaps[0]);
+      const label = bank.querySelector('em');
+      label.textContent = `${label.textContent.split(',')[0]}${even ? `, every ${gaps[0]}°` : ''}`;
+      bank.replaceChildren(label);
+      slots.forEach((slot, i) => {
+        const tick = document.createElement('span');
+        tick.className = 'tick';
+        tick.dataset.slot = slot;
+        tick.dataset.cylinder = firing[slot % 8];
+        tick.style.left = `${(slot / 16) * 100}%`;
+        bank.append(tick);
+        if (even || i === slots.length - 1) return;
+        const gap = document.createElement('span');
+        gap.className = gaps[i] === 180 ? 'gap' : 'gap odd';
+        gap.textContent = `${gaps[i]}°`;
+        gap.style.left = `${(slot / 16) * 100}%`;
+        gap.style.width = `${(gaps[i] / 1440) * 100}%`;
+        bank.append(gap);
+      });
+      if (which !== 'engine') heard.push(`the ${which} bank at ${even ? `every ${gaps[0]}` : gaps.slice(0, 4).join(', ')} degrees`);
     }
+    document.querySelector('.banks').setAttribute('aria-label',
+      `Firing over two cycles. The engine fires every 90 degrees; ${heard.join('; ')}.`);
   };
 
   // The same firing order as a metronome: one click per cylinder, a cycle
@@ -488,8 +624,10 @@
         click(began + slot * slotSeconds, right);
       slot++;
     }
-    const turned = ((context.currentTime - began) / (16 * slotSeconds)) % 1;
-    sweep.style.left = `${Math.max(0, turned) * 100}%`;
+    const turned = Math.max(0, (context.currentTime - began) / slotSeconds) % 16;
+    sweep.style.left = `${(turned / 16) * 100}%`;
+    for (const tick of all('.bank:not(.mute) .tick'))
+      tick.classList.toggle('lit', +tick.dataset.slot === Math.floor(turned) && turned % 1 < 0.5);
     requestAnimationFrame(beat);
   };
 
@@ -498,6 +636,7 @@
     sweep.hidden = true;
     for (const b of all('[data-listen]')) b.setAttribute('aria-pressed', false);
     for (const bank of all('.bank')) bank.classList.remove('mute');
+    for (const tick of all('.tick')) tick.classList.remove('lit');
   };
 
   for (const b of all('[data-listen]')) {
@@ -510,7 +649,7 @@
       listening = chosen;
       b.setAttribute('aria-pressed', true);
       for (const bank of all('.bank'))
-        bank.classList.toggle('mute', chosen !== 'both' && bank.dataset.bank !== chosen);
+        bank.classList.toggle('mute', chosen === 'both' ? bank.dataset.bank !== 'engine' : bank.dataset.bank !== chosen);
       sweep.hidden = false;
       await context.resume();
       if (fresh) { began = context.currentTime + 0.05; slot = 0; beat(); }
@@ -522,29 +661,34 @@
   // Computed here, from the same files the player plays, so the picture cannot
   // disagree with the sound. One channel, because one channel is one tailpipe
   // and one tailpipe is one bank. An 8192-point Hann window resolves about
-  // 6 Hz, which is what it takes to separate half orders on the pull.
+  // 6 Hz, which is what it takes to separate half orders on the pull; it is
+  // zero-padded to twice that so the lines are drawn smoothly.
 
-  const size = 8192;
+  const span = 8192;
+  const size = 2 * span;
   const ceiling = 500;   // Hz
-  const columns = 720;
+  const floor = 50;      // dB below the loudest thing in either file
+  const columns = 640;
   const spectra = {};
 
-  const window_ = Float32Array.from({ length: size },
-    (_, n) => 0.5 - 0.5 * Math.cos((2 * Math.PI * n) / size));
+  const hann = Float32Array.from({ length: span },
+    (_, n) => 0.5 - 0.5 * Math.cos((2 * Math.PI * n) / span));
+  const cosine = Float32Array.from({ length: size / 2 }, (_, k) => Math.cos((-2 * Math.PI * k) / size));
+  const sine = Float32Array.from({ length: size / 2 }, (_, k) => Math.sin((-2 * Math.PI * k) / size));
 
   const transform = (re, im) => {
     for (let i = 1, j = 0; i < size; i++) {
       let bit = size >> 1;
       for (; j & bit; bit >>= 1) j ^= bit;
       j ^= bit;
-      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; }
+      if (i < j) { const t = re[i]; re[i] = re[j]; re[j] = t; }
     }
-    for (let span = 2; span <= size; span <<= 1) {
-      const angle = (-2 * Math.PI) / span;
-      for (let base = 0; base < size; base += span) {
-        for (let k = 0; k < span / 2; k++) {
-          const c = Math.cos(angle * k), s = Math.sin(angle * k);
-          const a = base + k, b = a + span / 2;
+    for (let width = 2; width <= size; width <<= 1) {
+      const stride = size / width;
+      for (let base = 0; base < size; base += width) {
+        for (let k = 0; k < width / 2; k++) {
+          const c = cosine[k * stride], s = sine[k * stride];
+          const a = base + k, b = a + width / 2;
           const xr = re[b] * c - im[b] * s, xi = re[b] * s + im[b] * c;
           re[b] = re[a] - xr; im[b] = im[a] - xi;
           re[a] += xr; im[a] += xi;
@@ -562,13 +706,14 @@
     const re = new Float32Array(size), im = new Float32Array(size);
     for (let column = 0; column < columns; column++) {
       const centre = Math.floor((column / columns) * pipe.length);
-      for (let n = 0; n < size; n++) {
-        re[n] = (pipe[centre - size / 2 + n] ?? 0) * window_[n];
-        im[n] = 0;
-      }
+      re.fill(0); im.fill(0);
+      for (let n = 0; n < span; n++) re[n] = (pipe[centre - span / 2 + n] ?? 0) * hann[n];
       transform(re, im);
       for (let row = 0; row < rows; row++)
         decibels[column * rows + row] = 10 * Math.log10(re[row] ** 2 + im[row] ** 2 + 1e-12);
+      // Let the page breathe: this is a second of arithmetic, and nobody
+      // should feel it.
+      if (column % 16 === 15) await new Promise((next) => setTimeout(next));
     }
     return { rows, decibels };
   };
@@ -585,21 +730,24 @@
       const image = new ImageData(columns, rows);
       for (let column = 0; column < columns; column++) {
         for (let row = 0; row < rows; row++) {
-          const level = (decibels[column * rows + row] - (loudest - 60)) / 60;
+          const level = (decibels[column * rows + row] - (loudest - floor)) / floor;
           const at = ((rows - 1 - row) * columns + column) * 4;
-          image.data.set([r, g, b, 255 * Math.min(1, Math.max(0, level)) ** 1.5], at);
+          image.data.set([r, g, b, 255 * Math.min(1, Math.max(0, level)) ** 1.6], at);
         }
       }
       canvas.getContext('2d').putImageData(image, 0, 0);
+      scope.classList.add('drawn');
     }
   };
 
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
 
   draw();
+  place();
   if (location.hash === '#flat') fit('flat');
-  Promise.all(Object.entries(takes).map(async ([name, a]) => {
-    spectra[name] = await analyse(a.getAttribute('src'));
-  })).then(paint);
+  (async () => {
+    for (const [name, a] of Object.entries(takes)) spectra[name] = await analyse(a.getAttribute('src'));
+    paint();
+  })();
 </script>
 </html>

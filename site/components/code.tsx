@@ -1,35 +1,47 @@
 import * as stylex from '@stylexjs/stylex';
 import type { ReactNode } from 'react';
 
-import { color, font, layout, leading, size, space } from '@/design/tokens.stylex';
+import { color, font, size, space, term } from '@/design/tokens.stylex';
 
 // Two readers, and neither of them invents anything.
 //
 // The first walks C++ and marks what the language already distinguishes. The
 // second reads the escape codes the instruments print and maps them onto the
-// page's own greys — so the emphasis you see here is the emphasis the program
-// chose in a terminal, not a decoration applied afterwards.
+// same palette — so the emphasis on this page is the emphasis the program chose
+// in a terminal, translated rather than decorated.
 
 type Kind =
   | 'comment'
   | 'string'
   | 'number'
   | 'keyword'
+  | 'type'
+  | 'scope'
+  | 'call'
   | 'directive'
   | 'punctuation'
   | 'plain';
 
+// Control flow, declarators, storage. These are the words that are about the
+// program rather than about the engine.
 const keywords = new Set([
-  'alignas', 'auto', 'bool', 'break', 'case', 'char', 'class', 'const',
-  'consteval', 'constexpr', 'continue', 'default', 'delete', 'do', 'double',
-  'else', 'enum', 'explicit', 'export', 'extern', 'false', 'float', 'for',
-  'friend', 'if', 'inline', 'int', 'long', 'namespace', 'noexcept', 'nullptr',
-  'operator', 'private', 'protected', 'public', 'return', 'short', 'signed',
-  'sizeof', 'static', 'struct', 'switch', 'template', 'this', 'throw', 'true',
-  'try', 'typename', 'union', 'unsigned', 'using', 'virtual', 'void', 'while',
+  'alignas', 'break', 'case', 'catch', 'class', 'const', 'consteval',
+  'constexpr', 'continue', 'default', 'delete', 'do', 'else', 'enum',
+  'explicit', 'export', 'extern', 'false', 'for', 'friend', 'if', 'inline',
+  'namespace', 'new', 'noexcept', 'nullptr', 'operator', 'private',
+  'protected', 'public', 'requires', 'return', 'sizeof', 'static',
+  'static_assert', 'struct', 'switch', 'template', 'this', 'throw', 'true',
+  'try', 'typename', 'union', 'using', 'virtual', 'while',
 ]);
 
-const rules: readonly (readonly [Kind, RegExp])[] = [
+// The built-in types, which in this project are outnumbered by the ones with
+// names — Bore, Stroke, Lobe, Crankshaft — and those are caught by their case.
+const builtins = new Set([
+  'auto', 'bool', 'char', 'double', 'float', 'int', 'long', 'short',
+  'signed', 'size_t', 'unsigned', 'void',
+]);
+
+const patterns: readonly (readonly [Kind, RegExp])[] = [
   ['comment', /^\/\/[^\n]*/],
   ['comment', /^\/\*[\s\S]*?\*\//],
   ['string', /^R"\([\s\S]*?\)"/],
@@ -51,14 +63,28 @@ function scan(source: string) {
     else pieces.push({ kind, text });
   };
 
+  // What an identifier is depends on what follows it, which is the whole of
+  // the grammar this needs: a name before `::` names a scope, a name before `(`
+  // is being called, a name in Pascal case is a type because that is the
+  // convention the source keeps without exception.
+  const classify = (word: string, after: string): Kind => {
+    if (keywords.has(word)) return 'keyword';
+    if (builtins.has(word)) return 'type';
+    if (after.startsWith('::')) return 'scope';
+    if (/^\s*\(/.test(after)) return 'call';
+    if (/^[A-Z]/.test(word)) return 'type';
+    return 'plain';
+  };
+
   while (rest.length > 0) {
     let taken = false;
-    for (const [kind, pattern] of rules) {
+    for (const [kind, pattern] of patterns) {
       const hit = pattern.exec(rest);
       if (!hit) continue;
       const word = hit[0];
-      add(kind === 'plain' && keywords.has(word) ? 'keyword' : kind, word);
-      rest = rest.slice(word.length);
+      const next = rest.slice(word.length);
+      add(kind === 'plain' && /^[A-Za-z_]/.test(word) ? classify(word, next) : kind, word);
+      rest = next;
       taken = true;
       break;
     }
@@ -86,20 +112,38 @@ export function Source({ children }: { children: string }) {
   );
 }
 
+// A shell command is a terminal too, so it gets the same panel and none of the
+// colouring — nothing in it has been parsed, and pretending otherwise would be
+// the first decorative thing on the site.
+export function Cmd({ children }: { children: ReactNode }) {
+  return (
+    <figure {...stylex.props(s.figure)}>
+      <pre {...stylex.props(s.block, s.shell)}>{children}</pre>
+    </figure>
+  );
+}
+
 // ── What the instruments printed ────────────────────────────────────────────
-//
-// Primary series in ink, secondary in grey, agreement in patina, scaffolding
-// faint. The program said red and yellow for the curve it wants you to read
-// first, blue and cyan for the one underneath it, green where they agree.
 
 type Ink = { bold: boolean; dim: boolean; hue: number | null };
 
-const paint = (hue: number | null) => {
-  if (hue === 31 || hue === 33) return s.lead;
-  if (hue === 34 || hue === 36) return s.second;
-  if (hue === 32) return s.agree;
-  if (hue === 90) return s.dim;
-  return undefined;
+const hues: Record<number, keyof typeof s> = {
+  30: 'fog',
+  31: 'coral',
+  32: 'mint',
+  33: 'amber',
+  34: 'sky',
+  35: 'violet',
+  36: 'cyan',
+  37: 'plain',
+  90: 'fog',
+  91: 'coral',
+  92: 'mint',
+  93: 'amber',
+  94: 'sky',
+  95: 'violet',
+  96: 'cyan',
+  97: 'bright',
 };
 
 function readAnsi(source: string) {
@@ -123,6 +167,23 @@ function readAnsi(source: string) {
   }
   if (at < source.length) runs.push({ text: source.slice(at), ink });
   return runs;
+}
+
+// A number is a number, in a header or in a column of output, so the rule that
+// paints them in the source paints them here too. Only where the program left
+// the text unpainted — anywhere it chose a colour, its choice stands.
+const digits = /(\d[\d.,:\-]*\d|\d)/;
+
+function figures(text: string) {
+  return text.split(digits).map((part, i) =>
+    digits.test(part) && /\d/.test(part) ? (
+      <span key={i} {...stylex.props(s.amber)}>
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
 }
 
 // Pull a window out of a captured run, so a page can quote the four lines that
@@ -150,12 +211,14 @@ export function Output({
                 key={i}
                 {...stylex.props(
                   s.token,
+                  run.ink.hue !== null ? s[hues[run.ink.hue] ?? 'plain'] : undefined,
+                  run.ink.dim && s.fog,
                   run.ink.bold && s.bold,
-                  run.ink.dim && s.dim,
-                  paint(run.ink.hue),
                 )}
               >
-                {run.text}
+                {run.ink.hue === null && !run.ink.bold && !run.ink.dim
+                  ? figures(run.text)
+                  : run.text}
               </span>
             ))}
           </code>
@@ -171,14 +234,14 @@ export function Output({
 
 const s = stylex.create({
   figure: {
-    marginBlock: space.xl,
+    marginBlock: space.lg,
     marginInline: 0,
   },
-  // Terminal output is eighty columns wide and the prose is sixty-six, so the
+  // Terminal output is eighty columns wide and the prose is sixty-eight, so the
   // output steps outside the column — but only once the window is wide enough
   // to lend it the room, and never by a viewport unit. `100vw` includes the
-  // scrollbar, so a bleed measured that way is a few pixels wider than the
-  // page and every one of these figures pushes the document sideways.
+  // scrollbar, so a bleed measured that way is a few pixels wider than the page
+  // and every one of these figures pushes the document sideways.
   bleed: {
     marginInline: {
       default: 0,
@@ -190,44 +253,67 @@ const s = stylex.create({
     maxWidth: '47rem',
   },
   block: {
-    backgroundColor: color.raised,
-    borderColor: color.rule,
-    borderRadius: 2,
+    backgroundColor: term.ground,
+    borderColor: term.border,
+    borderRadius: 4,
     borderStyle: 'solid',
     borderWidth: 1,
+    color: term.text,
     fontFamily: font.mono,
     fontSize: size.tiny,
-    lineHeight: leading.snug,
+    lineHeight: '1.55',
     margin: 0,
     overflowX: 'auto',
-    paddingBlock: space.md,
-    paddingInline: space.lg,
+    paddingBlock: space.sm,
+    paddingInline: space.md,
+    scrollbarColor: `${term.border} transparent`,
+    scrollbarWidth: 'thin',
+    '::selection': {
+      backgroundColor: term.glow,
+      color: term.bright,
+    },
+  },
+  shell: {
+    color: term.text,
   },
   terminal: {
     fontSize: size.micro,
     lineHeight: '1.4',
   },
   token: {
-    color: color.ink,
+    color: term.text,
   },
-  comment: { color: color.faint },
-  string: { color: color.muted },
-  number: { color: color.patina },
-  keyword: { color: color.ink, fontWeight: 600 },
-  directive: { color: color.muted },
-  punctuation: { color: color.muted },
-  plain: { color: color.ink },
-  bold: { color: color.ink, fontWeight: 600 },
-  dim: { color: color.faint },
-  lead: { color: color.ink },
-  second: { color: color.muted },
-  agree: { color: color.patina },
+
+  // C++
+  comment: { color: term.fog },
+  string: { color: term.mint },
+  number: { color: term.amber },
+  keyword: { color: term.violet },
+  type: { color: term.cyan },
+  scope: { color: term.cyan },
+  call: { color: term.sky },
+  directive: { color: term.coral },
+  punctuation: { color: term.punctuation },
+
+  // ANSI
+  plain: { color: term.text },
+  bright: { color: term.bright },
+  bold: { color: term.bright, fontWeight: 600 },
+  fog: { color: term.fog },
+  coral: { color: term.coral },
+  mint: { color: term.mint },
+  amber: { color: term.amber },
+  sky: { color: term.sky },
+  violet: { color: term.violet },
+  cyan: { color: term.cyan },
+  rose: { color: term.rose },
+
   caption: {
     alignItems: 'baseline',
-    columnGap: space.md,
+    columnGap: space.sm,
     display: 'flex',
     flexWrap: 'wrap',
-    paddingBlockStart: space.sm,
+    paddingBlockStart: space.xs,
   },
   command: {
     color: color.faint,

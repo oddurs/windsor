@@ -56,10 +56,6 @@ export function Lede({ children }: { children: ReactNode }) {
   return <p {...stylex.props(s.p, s.lede)}>{children}</p>;
 }
 
-export function Cmd({ children }: { children: ReactNode }) {
-  return <pre {...stylex.props(s.cmd)}>{children}</pre>;
-}
-
 export function Code({ children }: { children: ReactNode }) {
   return <code {...stylex.props(s.code)}>{children}</code>;
 }
@@ -153,112 +149,115 @@ const s = stylex.create({
     paddingInline: layout.gutter,
   },
   masthead: {
-    paddingBlockEnd: space.xl,
+    paddingBlockEnd: space.lg,
   },
+  // The one place the scale is allowed to jump. Everything else on the page
+  // sits inside a single octave; this does not, and that is what makes the top
+  // of a page read as the top of a page.
   title: {
     fontSize: size.head,
     fontWeight: 600,
-    letterSpacing: '-0.01em',
+    letterSpacing: '-0.018em',
     lineHeight: leading.tight,
     margin: 0,
+    textWrap: 'balance',
   },
   sub: {
     color: color.muted,
-    fontSize: size.base,
+    fontSize: size.lead,
     lineHeight: leading.snug,
-    marginBlock: space.sm,
-    maxWidth: '32rem',
+    marginBlockEnd: 0,
+    marginBlockStart: space.sm,
+    maxWidth: '30rem',
+    textWrap: 'pretty',
   },
   section: {
     borderTopColor: color.rule,
     borderTopStyle: 'solid',
     borderTopWidth: 1,
     marginBlockStart: space.section,
-    paddingBlockStart: space.lg,
+    paddingBlockStart: space.md,
   },
   heading: {
     alignItems: 'baseline',
     display: 'flex',
-    fontSize: size.base,
+    fontSize: size.lead,
     fontWeight: 600,
+    letterSpacing: '-0.006em',
     lineHeight: leading.snug,
     marginBlock: 0,
+    textWrap: 'balance',
   },
-  // The number is set in the margin where there is room for it and folded back
+  // The number sits in the margin where there is room for it and folds back
   // into the line where there is not.
   index: {
     color: color.faint,
     flexShrink: 0,
     fontSize: size.micro,
-    fontWeight: 400,
     fontVariantNumeric: 'tabular-nums',
+    fontWeight: 400,
     marginInlineStart: {
       default: '-1.75rem',
       '@media (max-width: 44rem)': 0,
     },
     paddingInlineEnd: {
       default: 0,
-      '@media (max-width: 44rem)': space.sm,
+      '@media (max-width: 44rem)': space.xs,
     },
     width: {
       default: '1.75rem',
       '@media (max-width: 44rem)': 'auto',
     },
   },
+  // One line between paragraphs, because the line is what the page is measured
+  // in. Anything less and the block sets solid; anything more and it drifts.
   p: {
-    marginBlock: space.lg,
+    marginBlock: space.line,
+    textWrap: 'pretty',
   },
   lede: {
     color: color.ink,
     fontSize: size.lead,
-  },
-  cmd: {
-    backgroundColor: color.raised,
-    borderColor: color.rule,
-    borderRadius: 2,
-    borderStyle: 'solid',
-    borderWidth: 1,
-    fontFamily: font.mono,
-    fontSize: size.tiny,
-    lineHeight: leading.snug,
-    marginBlock: space.lg,
-    overflowX: 'auto',
-    paddingBlock: space.md,
-    paddingInline: space.lg,
+    letterSpacing: '-0.004em',
   },
   code: {
     fontFamily: font.mono,
-    fontSize: '0.92em',
+    fontSize: '0.9em',
     wordBreak: 'break-word',
   },
   note: {
     borderInlineStartColor: color.rule,
     borderInlineStartStyle: 'solid',
-    borderInlineStartWidth: 1,
+    borderInlineStartWidth: 2,
     color: color.muted,
     fontSize: size.small,
     lineHeight: leading.snug,
-    marginBlock: space.xl,
-    paddingInlineStart: space.lg,
+    marginBlock: space.lg,
+    paddingInlineStart: space.md,
+    textWrap: 'pretty',
   },
   quote: {
     borderInlineStartColor: color.faint,
     borderInlineStartStyle: 'solid',
-    borderInlineStartWidth: 1,
+    borderInlineStartWidth: 2,
     fontSize: size.base,
-    marginBlock: space.xl,
+    lineHeight: leading.snug,
+    marginBlock: space.lg,
     marginInline: 0,
-    paddingInlineStart: space.lg,
+    paddingInlineStart: space.md,
+    textWrap: 'pretty',
   },
   a: {
     color: color.ink,
     textDecorationColor: { default: color.faint, ':hover': color.ink },
     textDecorationLine: 'underline',
     textDecorationThickness: '1px',
-    textUnderlineOffset: '0.2em',
+    textUnderlineOffset: '0.18em',
+    transitionDuration: '120ms',
+    transitionProperty: 'text-decoration-color',
   },
   figure: {
-    marginBlock: space.xl,
+    marginBlock: space.lg,
     marginInline: 0,
   },
   scroll: {
@@ -277,13 +276,14 @@ const s = stylex.create({
     color: color.muted,
     fontSize: size.micro,
     fontWeight: 400,
-    paddingBlock: space.sm,
+    letterSpacing: '0.02em',
+    paddingBlock: space.xs,
     paddingInline: 0,
     textAlign: 'start',
     whiteSpace: 'nowrap',
   },
   td: {
-    borderBottomColor: color.rule,
+    borderBottomColor: color.hairline,
     borderBottomStyle: 'solid',
     borderBottomWidth: 1,
     paddingBlock: space.sm,
@@ -291,7 +291,7 @@ const s = stylex.create({
     verticalAlign: 'baseline',
   },
   right: {
-    paddingInlineStart: space.lg,
+    paddingInlineStart: space.md,
     textAlign: 'end',
   },
   num: {
@@ -302,22 +302,22 @@ const s = stylex.create({
     color: color.faint,
     fontFamily: font.mono,
     fontSize: size.micro,
-    paddingBlockStart: space.sm,
+    paddingBlockStart: space.xs,
   },
   dl: {
-    marginBlock: space.xl,
+    marginBlock: space.lg,
   },
   dlRow: {
-    borderTopColor: color.rule,
+    borderTopColor: color.hairline,
     borderTopStyle: 'solid',
     borderTopWidth: 1,
+    columnGap: space.md,
     display: 'grid',
-    columnGap: space.lg,
     gridTemplateColumns: {
-      default: '8.5rem 1fr',
+      default: '9rem 1fr',
       '@media (max-width: 34rem)': '1fr',
     },
-    paddingBlock: space.md,
+    paddingBlock: space.sm,
   },
   dt: {
     color: color.ink,
@@ -327,12 +327,13 @@ const s = stylex.create({
   dtCode: {
     fontFamily: font.mono,
     fontSize: size.tiny,
-    lineHeight: leading.prose,
+    lineHeight: '1.6',
   },
   dd: {
     color: color.muted,
     fontSize: size.small,
     lineHeight: leading.snug,
     marginInlineStart: 0,
+    textWrap: 'pretty',
   },
 });

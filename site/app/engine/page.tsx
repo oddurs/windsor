@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import {
   A,
   Article,
-  Cmd,
   Code,
   Lede,
   Note,
@@ -12,7 +11,8 @@ import {
   Terms,
   Title,
 } from '@/components/prose';
-import { Source } from '@/components/code';
+import { Cmd, Source } from '@/components/code';
+import { CrankSlider, FirstLaw, OttoEfficiency, Woschni } from '@/components/math';
 
 export const metadata: Metadata = {
   title: 'The engine',
@@ -114,25 +114,42 @@ export default function Engine() {
           not take the shortcut. Each cylinder is integrated in crank angle,
           five terms of the first law per radian.
         </Lede>
-        <Cmd>
-          {`m·cᵥ·dT/dθ  =  −p·dV/dθ           the piston, taking or giving work
-               + dQ_burn/dθ       the fire            (Wiebe)
-               − dQ_wall/dθ       the coolant         (Woschni)
-               + Σ (dmᵢ/dθ)·hᵢ    gas arriving        (compressible orifice flow)
-               − u·dm/dθ          the same, as mass`}
-        </Cmd>
+        <FirstLaw />
+        <P>
+          That is the whole model. Five terms, and each one is a file already
+          written.
+        </P>
         <P>
           Open and not closed, because everything anyone cares about happens in
           the half of the cycle the air-standard Otto cycle deletes — the half
-          where the valves are open and the mass is a variable. Pumping loss,
-          volumetric efficiency, cam timing, reversion, the entire reason a
-          throttle costs you anything: all of it lives in the half that the
-          textbook version throws away to make the integral tidy.
+          where the valves are open and the mass is a variable. The textbook is
+          taught first because a closed system gives you{' '}
+          <OttoEfficiency /> in one line, and that line is genuinely why
+          compression ratio matters. It is also the last thing it can tell you.
+          Pumping loss, volumetric efficiency, cam timing, reversion, the
+          entire reason a throttle costs you anything: all of it lives in the
+          half thrown away to make the integral tidy.
         </P>
         <P>
-          γ varies with temperature, falling from 1.400 in a cold intake charge
-          to 1.246 in combustion products. Compute a cycle at a constant 1.4
-          and it will promise you a fifth more thermal efficiency than any
+          The third term is where a third of the fuel goes, and it is also the
+          one place in this project where the SI rule bends. Woschni&rsquo;s
+          1967 correlation is not dimensionally homogeneous — the leading
+          constant carries whatever units are needed to balance the two sides.
+        </P>
+        <Woschni />
+        <P>
+          Feed it pascals instead of kilopascals and it returns a number four
+          thousand times too large, silently, and the engine runs stone cold
+          and makes far too much power. So <Code>woschni.hpp</Code> converts at
+          its own boundary and says so loudly in a comment. This is the
+          difference between a law and a correlation: everything else here is a
+          statement about how the world is, and this is a statement about what
+          Woschni measured.
+        </P>
+        <P>
+          γ varies with temperature too, falling from 1.400 in a cold intake
+          charge to 1.246 in combustion products. Compute a cycle at a constant
+          1.4 and it will promise you a fifth more thermal efficiency than any
           engine has ever delivered. That gap is not a mystery. It is a
           constant somebody left alone.
         </P>
@@ -167,6 +184,14 @@ export default function Engine() {
           does that. I was aiming for a service manual written by someone who
           likes the machine. They are meant to be read in this order, each one
           assuming the last.
+        </P>
+        <CrankSlider />
+        <P>
+          That is <Code>geometry.hpp</Code>, and it is the entire machine. A
+          piston does not travel sinusoidally — the root is the rod swinging
+          off the centreline, and everything people find surprising about an
+          engine, including why the secondary shaking forces exist at all,
+          comes out of that one term.
         </P>
         <Terms items={spine} code />
         <P>
@@ -245,12 +270,12 @@ export default function Engine() {
           says what it was fitted to. There are five. Anything unmarked is
           Ford&rsquo;s.
         </P>
-        <Source>{`short_block()          4.000 × 3.000, 5.090 in rods, 9.5:1
+        <Cmd>{`short_block()          4.000 × 3.000, 5.090 in rods, 9.5:1
 stock_cam()            266°/256°, 0.426/0.425 in lift, 117° ICL, 110.5° LSA
 
 cross_plane_crank()    the factory forging  →  1-5-4-2-6-3-7-8
 cross_plane_crank_ho() the same forging, 1982 cam  →  1-3-7-2-6-5-4-8
-flat_plane_crank()     a billet flat crank, same block, same rods`}</Source>
+flat_plane_crank()     a billet flat crank, same block, same rods`}</Cmd>
         <P>
           Grind the throws into one plane and every bank interval goes to 180°.
           Hand <Code>Camshaft::from_card</Code> what a catalogue prints and it

@@ -165,7 +165,7 @@ export function Recording() {
 
 const s = stylex.create({
   figure: {
-    marginBlock: space.xl,
+    marginBlock: space.lg,
     marginInline: 0,
   },
   panel: {
@@ -174,15 +174,15 @@ const s = stylex.create({
     borderRadius: 2,
     borderStyle: 'solid',
     borderWidth: 1,
-    paddingBlock: space.md,
-    paddingInline: space.lg,
+    paddingBlock: space.sm,
+    paddingInline: space.md,
   },
   row: {
     alignItems: 'center',
-    columnGap: space.lg,
+    columnGap: space.md,
     display: 'flex',
     flexWrap: 'wrap',
-    rowGap: space.sm,
+    rowGap: space.xs,
   },
   transport: {
     alignItems: 'center',
@@ -208,7 +208,7 @@ const s = stylex.create({
     lineHeight: leading.snug,
   },
   cranks: {
-    columnGap: space.lg,
+    columnGap: space.md,
     display: 'flex',
     marginInlineStart: 'auto',
   },
@@ -235,7 +235,7 @@ const s = stylex.create({
   track: {
     backgroundColor: color.rule,
     height: 1,
-    marginBlockStart: space.md,
+    marginBlockStart: space.sm,
     overflow: 'hidden',
   },
   run: {
@@ -246,6 +246,6 @@ const s = stylex.create({
     color: color.faint,
     fontFamily: font.mono,
     fontSize: size.micro,
-    paddingBlockStart: space.sm,
+    paddingBlockStart: space.xs,
   },
 });

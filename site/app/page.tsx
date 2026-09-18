@@ -1,7 +1,16 @@
 import * as stylex from '@stylexjs/stylex';
 
-import { Output, Source, lines } from '@/components/code';
-import { A, Article, Code, Lede, Note, P, Section, Table } from '@/components/prose';
+import { Cmd, Output, Source, lines } from '@/components/code';
+import {
+  A,
+  Article,
+  Code,
+  Lede,
+  Note,
+  P,
+  Section,
+  Table,
+} from '@/components/prose';
 import { Recording } from '@/components/recording';
 import { output } from '@/content/output';
 import { color, leading, size, space } from '@/design/tokens.stylex';
@@ -14,6 +23,7 @@ export default function Home() {
         <p {...stylex.props(s.tagline)}>
           A Ford 302, modelled from first principles in C++23, for the sound.
         </p>
+        <Cmd>make &amp;&amp; ./windsor spec</Cmd>
         <p {...stylex.props(s.terms)}>
           No dependencies. Nothing to configure. It is an engine, and it runs.
         </p>
@@ -254,19 +264,21 @@ export default function Home() {
 }
 
 const s = stylex.create({
-  masthead: { paddingBlockEnd: space.sm },
+  masthead: { paddingBlockEnd: space.md },
   name: {
-    fontSize: size.head,
+    fontSize: size.display,
     fontWeight: 600,
-    letterSpacing: '-0.01em',
-    lineHeight: leading.tight,
+    letterSpacing: '-0.024em',
+    lineHeight: leading.flat,
     margin: 0,
   },
   tagline: {
     fontSize: size.lead,
     lineHeight: leading.snug,
-    marginBlock: space.sm,
+    marginBlockEnd: space.md,
+    marginBlockStart: space.sm,
     maxWidth: '30rem',
+    textWrap: 'pretty',
   },
   terms: {
     color: color.muted,

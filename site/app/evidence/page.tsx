@@ -13,6 +13,7 @@ import {
   Table,
   Title,
 } from '@/components/prose';
+import { LivengoodWu } from '@/components/math';
 import { output } from '@/content/output';
 
 export const metadata: Metadata = {
@@ -108,9 +109,18 @@ export default function Evidence() {
         <P>
           Livengood–Wu over Douaud–Eyzat: the end gas spends <Code>dt/τ</Code>{' '}
           of its patience each instant and goes off when the account reaches
-          one. It reports an index and not a verdict — the threshold belongs to
-          the CFR engine the correlation was fitted on — but the comparisons
-          are what compression ratio and advance are actually chosen by.
+          one.
+        </P>
+        <LivengoodWu />
+        <P>
+          It reports an index and not a verdict — the threshold belongs to the
+          CFR engine Douaud and Eyzat fitted the delay on, and a value of 1
+          means autoignition in <em>that</em> chamber, not in a Ford wedge.
+          Dividing by five to make the stock engine read 1.0 would be fitting
+          the model to flatter itself, so the constant stays as published and
+          the number is reported raw. What survives the recalibration is every
+          comparison, and the comparisons are what compression ratio and
+          advance are actually chosen by.
         </P>
         <Output from="./windsor verify">{lines(output.verify, 91, 99)}</Output>
         <P>

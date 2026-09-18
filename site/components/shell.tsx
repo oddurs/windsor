@@ -7,8 +7,10 @@ import type { ReactNode } from 'react';
 
 import { color, font, layout, leading, size, space } from '@/design/tokens.stylex';
 
-// The frame every page hangs in: a name, four ways out of here, and a rule at
-// the bottom. A site about a program that has one job should not need a menu.
+// The frame every page hangs in: a name, four ways through it, the source, and
+// a rule at each end. A site about a program with one job should not need a
+// menu, and these four are the argument in the order it is made — the claim,
+// the machine, what it produces, and the proof.
 const pages = [
   { href: '/crankshaft', label: 'the argument' },
   { href: '/engine', label: 'the engine' },
@@ -45,6 +47,16 @@ export function Shell({ children }: { children: ReactNode }) {
                 {page.label}
               </Link>
             ))}
+            <a
+              href={source}
+              rel="noreferrer"
+              {...stylex.props(s.link, s.offsite)}
+            >
+              github
+              <span aria-hidden {...stylex.props(s.arrow)}>
+                ↗
+              </span>
+            </a>
           </nav>
         </div>
       </header>
@@ -52,8 +64,8 @@ export function Shell({ children }: { children: ReactNode }) {
       <main {...stylex.props(s.main)}>{children}</main>
 
       <footer {...stylex.props(s.footer)}>
-        <div {...stylex.props(s.bar)}>
-          <span>
+        <div {...stylex.props(s.bar, s.colophonBar)}>
+          <span {...stylex.props(s.rot)}>
             Every figure here is a copy of something the program prints, and
             copies rot. <code {...stylex.props(s.code)}>./windsor verify</code>{' '}
             checks them.
@@ -61,8 +73,8 @@ export function Shell({ children }: { children: ReactNode }) {
           <span {...stylex.props(s.colophon)}>
             <span>Oddur Sigurdsson</span>
             <span aria-hidden>·</span>
-            <a href={source} {...stylex.props(s.link)}>
-              source
+            <a href={source} rel="noreferrer" {...stylex.props(s.link)}>
+              github
             </a>
             <span aria-hidden>·</span>
             <span>MIT</span>
@@ -83,58 +95,69 @@ const s = stylex.create({
     fontSize: size.base,
     lineHeight: leading.prose,
     minHeight: '100vh',   // not dvh: it resizes as mobile toolbars collapse
+    '::selection': {
+      backgroundColor: color.ink,
+      color: color.paper,
+    },
   },
   // One column, centred, the same width everywhere. The header sits over the
   // text rather than across the window, so the page reads as a single sheet.
   bar: {
     alignItems: 'baseline',
-    columnGap: space.lg,
+    columnGap: space.md,
     display: 'flex',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginInline: 'auto',
     maxWidth: layout.column,
     paddingInline: layout.gutter,
-    rowGap: space.sm,
+    rowGap: space.xs,
     width: '100%',
   },
   header: {
     borderBottomColor: color.rule,
     borderBottomStyle: 'solid',
     borderBottomWidth: 1,
-    paddingBlock: space.lg,
+    paddingBlock: space.md,
   },
   wordmark: {
     color: color.ink,
     fontSize: size.small,
-    fontWeight: 500,
-    letterSpacing: '0.01em',
+    fontWeight: 600,
+    letterSpacing: '-0.01em',
     textDecoration: 'none',
   },
   nav: {
-    columnGap: space.lg,
+    columnGap: space.md,
     display: 'flex',
     flexWrap: 'wrap',
-    rowGap: space.xs,
+    rowGap: space.hair,
   },
   link: {
     color: { default: color.muted, ':hover': color.ink },
     fontSize: size.tiny,
-    textDecorationColor: { default: color.rule, ':hover': color.muted },
+    textDecorationColor: { default: 'transparent', ':hover': color.faint },
     textDecorationLine: 'underline',
     textDecorationThickness: '1px',
     textUnderlineOffset: '0.2em',
     transitionDuration: '120ms',
-    transitionProperty: 'color',
+    transitionProperty: 'color, text-decoration-color',
   },
   here: {
     color: color.ink,
     textDecorationColor: color.faint,
   },
+  offsite: {
+    color: { default: color.faint, ':hover': color.ink },
+  },
+  arrow: {
+    fontSize: '0.85em',
+    paddingInlineStart: '0.15em',
+  },
   main: {
     flex: 1,
     paddingBlockEnd: space.page,
-    paddingBlockStart: space.xxl,
+    paddingBlockStart: space.lg,
   },
   footer: {
     borderTopColor: color.rule,
@@ -143,11 +166,19 @@ const s = stylex.create({
     color: color.faint,
     fontSize: size.micro,
     lineHeight: leading.snug,
-    paddingBlock: space.xl,
+    paddingBlock: space.line,
+  },
+  colophonBar: {
+    alignItems: 'baseline',
+    rowGap: space.xs,
+  },
+  rot: {
+    maxWidth: '26rem',
   },
   colophon: {
-    columnGap: space.sm,
+    columnGap: space.xs,
     display: 'flex',
+    flexWrap: 'wrap',
   },
   code: {
     fontFamily: font.mono,

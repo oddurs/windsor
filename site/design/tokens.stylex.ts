@@ -1,6 +1,6 @@
 import * as stylex from '@stylexjs/stylex';
 
-// The whole design system. Seven greys for the page, a lit palette for the
+// The whole design system. Seven greys for the page, a solved palette for the
 // terminal, two families, seven sizes and
 // a spacing scale built on the line. Everything on the site is assembled out of
 // this file and nothing else, which is the same discipline the engine applies
@@ -27,40 +27,38 @@ export const color = stylex.defineVars({
 
 // ── The terminal ────────────────────────────────────────────────────────────
 //
-// The page is paper and stays monochrome. A code block is not paper — it is a
-// terminal, and a terminal has always been lit rather than printed. So these do
-// not change with the theme: the panel is dark in both, because that is what
-// the thing being quoted actually looks like, and because it gives the one
-// place on the site that carries colour somewhere to put it.
+// A code block is not paper, but it is not a lightbox either. The ground is
+// neutral and one step darker than the page in both themes, so a panel settles
+// into the sheet instead of cutting a hole in it.
 //
-// Seven hues at roughly one lightness, which is what keeps a palette this
-// saturated from coming apart. Every one of them is load-bearing: each marks
-// something the language or the program already distinguished.
+// The hues are solved rather than chosen. Picking seven colours by eye gives
+// seven different perceptual lightnesses — the first attempt at this spread 22
+// points of L* — and the eye reads that as some of them shouting. So each hue
+// is held at ONE lightness and its channels solved to land there: L* 44 on the
+// light ground, L* 78 on the dark. Every hue in a theme therefore sits within
+// 0.05 of the same contrast, measured, which is what balance actually is.
 //
-// Measured against the ground: text 14.8:1, the hues 7.1 to 12.8, and fog —
-// which is what comments are set in — 5.5:1. Comments carry the argument in
-// this project, so they are the last thing that should be hard to read.
+//   light: every hue 5.0:1 on the panel, comments 4.7, text 14.2
+//   dark:  every hue 11.0:1, comments 4.9, text 13.6
 export const term = stylex.defineVars({
-  ground: '#0c1014',
-  border: '#1d2630',
-  glow: '#151d26',
+  ground: { default: '#f3f3f0', [dark]: '#0a0a0a' },
+  border: { default: '#e5e5e1', [dark]: '#1f1f1f' },
+  glow: { default: '#e6e6e0', [dark]: '#1c1c1c' },
 
-  text: '#dbe4ec',
-  bright: '#f4f8fb',
-  fog: '#7a8ba1',
-  punctuation: '#8a9bb0',
+  text: { default: '#232322', [dark]: '#d6d6d2' },
+  bright: { default: '#0f0f0e', [dark]: '#f2f2ee' },
+  fog: { default: '#6d6d68', [dark]: '#7f7f79' },
+  punctuation: { default: '#5c5c58', [dark]: '#9a9a94' },
 
-  cyan: '#57e5ff',
-  mint: '#52e8a5',
-  amber: '#ffc857',
-  coral: '#ff6e7f',
-  violet: '#c792ff',
-  sky: '#79aaff',
-  rose: '#ff86d0',
+  coral: { default: '#ac4939', [dark]: '#efb3a9' },
+  amber: { default: '#7e652a', [dark]: '#e2bc65' },
+  mint: { default: '#277551', [dark]: '#3dda91' },
+  cyan: { default: '#2b7182', [dark]: '#73cee4' },
+  sky: { default: '#3b67b2', [dark]: '#a8c2ef' },
+  violet: { default: '#8948c2', [dark]: '#d5b4f1' },
+  rose: { default: '#af3a84', [dark]: '#efadd7' },
 });
 
-// System fonts. The page should look like it belongs to the machine it is read
-// on, and a downloaded typeface is a dependency that arrives late or not at all.
 export const font = stylex.defineVars({
   text: 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   mono: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',

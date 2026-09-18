@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""Capture what the instruments actually print, into content/output.ts.
+
+The site quotes the program. Every quote is a copy, and copies rot, so no
+output on the site is typed by hand — it is captured from a real run by this
+script. After any change to the model, run it from site/ and commit the result.
+"""
+import json
+import pathlib
+import subprocess
+
+root = pathlib.Path(__file__).resolve().parents[2]
+subprocess.run(['make'], cwd=root, check=True, capture_output=True)
+
+instruments = ['spec', 'dyno', 'card', 'verify']
+captured = {}
+for name in instruments:
+    run = subprocess.run([root / 'windsor', name], cwd=root,
+                         check=True, capture_output=True, text=True)
+    captured[name] = run.stdout.rstrip('\n')
+
+revision = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=root,
+                          check=True, capture_output=True, text=True).stdout.strip()
+
+body = ''.join(
+    f'  {name}: {json.dumps(text)},\n' for name, text in captured.items()
+)
+out = pathlib.Path(__file__).resolve().parents[1] / 'content' / 'output.ts'
+out.parent.mkdir(exist_ok=True)
+out.write_text(
+    '// Captured from a real run by site/tools/capture. Do not edit by hand.\n'
+    f'// The engine at {revision} printed every character of this, escape codes\n'
+    '// and all, and the page renders those codes rather than inventing colour.\n'
+    '\n'
+    'export const output = {\n' + body + '} as const;\n'
+)
+for name, text in captured.items():
+    print(f'  {name:8s} {len(text.splitlines()):4d} lines')
+print(f'  -> {out.relative_to(pathlib.Path.cwd())} at {revision}')

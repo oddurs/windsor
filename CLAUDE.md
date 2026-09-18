@@ -1,6 +1,6 @@
 # windsor
 
-A Ford 302 Windsor, modelled from first principles in C++23, for no reason.
+A Ford 302 Windsor, modelled from first principles in C++23, for the sound.
 
 This is not a simulator that happens to be readable. It is a piece of writing
 that happens to run. If a change makes the engine more accurate and the source

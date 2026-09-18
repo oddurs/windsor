@@ -1,4 +1,8 @@
 windsor
 *.wav
+
+# The two the site plays are output as well, but they are shipped, so they are
+# the exception. site/tools/record refreshes them.
+!site/public/*.wav
 .DS_Store
 compile_commands.json

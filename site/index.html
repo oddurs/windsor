@@ -3,9 +3,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>windsor</title>
+<title>windsor — a Ford 302 V8, written in C++23, for the sound</title>
 <meta name="description" content="A Ford 302 V8, written in C++23, for the sound. Change the crankshaft and hear it change.">
 <meta property="og:title" content="windsor">
+<meta property="og:image" content="https://oddurs.github.io/windsor/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <meta property="og:description" content="A Ford 302 V8, written in C++23, for the sound. Change the crankshaft and hear it change.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2v12M2 8h12' stroke='%23777' stroke-width='1' stroke-dasharray='1 1.5'/%3E%3Cg fill='%23777'%3E%3Ccircle cx='8' cy='2' r='1.6'/%3E%3Ccircle cx='8' cy='14' r='1.6'/%3E%3Ccircle cx='2' cy='8' r='1.6'/%3E%3Ccircle cx='14' cy='8' r='1.6'/%3E%3C/g%3E%3C/svg%3E">
 
@@ -27,6 +29,7 @@
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     --hang: 0rem;
     --gutter: 0rem;
+    --over: 0rem;
     /* The terminal's colours are solved rather than chosen: each hue is held at
        one lightness, so that none of them shouts. */
     --coral: #ac4939; --amber: #7e652a; --mint: #277551;
@@ -43,6 +46,7 @@
   /* Where there is room, the panels hang outside the column by exactly their
      own padding, so that code and prose share one left edge. */
   @media (min-width: 46rem) { :root { --hang: 2rem; --gutter: 3.25rem; } }
+  @media (min-width: 60rem) { :root { --over: 8rem; } }
 
   body {
     background: var(--paper);
@@ -55,6 +59,7 @@
     -webkit-text-size-adjust: 100%;
   }
   ::selection { background: var(--mark); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
   h1 { font-size: 2.25rem; font-weight: 600; letter-spacing: -0.028em; line-height: 1.1; margin: 0; }
@@ -111,13 +116,16 @@
   /* ── The spectrograms ───────────────────────────────────────────────────── */
 
   .scope { cursor: crosshair; margin: 0; position: relative; }
+  #scope { margin-inline: calc(-1 * var(--hang)); }
+  #scope canvas { height: 12rem; }
+  #scope + .phases { margin-inline: calc(-1 * var(--hang)); }
   .scope canvas {
     background: var(--raised);
     border: 1px solid var(--rule);
     border-radius: 2px;
     box-sizing: border-box;
     display: block;
-    height: 8rem;
+    height: 9rem;
     opacity: 0;
     transition: opacity 600ms;
     width: 100%;
@@ -146,7 +154,9 @@
   figcaption { color: var(--faint); font-size: 0.875rem; padding-top: 0.625rem; }
   pre { font: 0.78125rem/1.7 var(--mono); margin: 0; overflow-x: auto; tab-size: 4; }
 
-  pre.source { counter-reset: line; margin-left: calc(-1 * var(--gutter)); }
+  /* A long line runs on past the column, where there is room, sooner than it
+     is cut off or wrapped: it is one line in the file. */
+  pre.source { counter-reset: line; margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--over)); }
   pre.source > span::before {
     color: var(--faint);
     content: counter(line);
@@ -164,6 +174,14 @@
      reserved for physical quantities: a number with its unit on it. */
   pre.source i { color: var(--muted); font-style: normal; }
   pre.source em { color: var(--amber); font-style: normal; }
+  /* A passage that is all comment is the author speaking, and is set in ink. */
+  pre.source.said i { color: var(--ink); }
+  /* On a phone a comment is prose and is allowed to wrap, each line hanging
+     under its own words and not under its slashes. Code never wraps. */
+  @media (max-width: 45.99rem) {
+    pre.said { white-space: pre-wrap; }
+    pre.said > span { box-sizing: border-box; display: inline-block; padding-left: 3ch; text-indent: -3ch; width: 100%; }
+  }
   figcaption.where { font-size: 0.8125rem; }
   figcaption.where a { text-decoration-color: transparent; }
   figcaption.where a:hover { text-decoration-color: var(--faint); }
@@ -261,7 +279,7 @@
       <button type="button" data-fit="cross" aria-pressed="true">cross-plane</button>
       <button type="button" data-fit="flat" aria-pressed="false">flat-plane</button>
     </span>
-    <output id="clock">0:00</output>
+    <output id="clock" aria-live="off">0:00</output>
   </div>
   <div class="track"><div id="run"></div></div>
 </div>
@@ -270,11 +288,15 @@
   other crankshaft while it runs.
 </p>
 
+<noscript>
+  <p class="hint">Without JavaScript there is no switch and no picture, but the recordings are still here. Cross-plane, then flat-plane:</p>
+  <p><audio controls src="windsor.m4a"></audio> <audio controls src="windsor-flat.m4a"></audio></p>
+</noscript>
 <audio data-crank="cross" src="windsor.m4a" preload="metadata"></audio>
 <audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
 
 <figure>
-<pre class="source" data-from="apps/record.cpp" data-lines="3-12" style="counter-reset: line 2"><span><i>// This file contains no acoustics. Every sample it writes was computed by</i></span>
+<pre class="source said" data-from="apps/record.cpp" data-lines="3-12" style="counter-reset: line 2"><span><i>// This file contains no acoustics. Every sample it writes was computed by</i></span>
 <span><i>// `exhaust.hpp` out of gas leaving eight cylinders at moments decided by</i></span>
 <span><i>// `crankshaft.hpp`, and all this does is hold the throttle, drain the two</i></span>
 <span><i>// banks, add them together and put a RIFF header on the front.</i></span>
@@ -309,7 +331,7 @@
   At the flywheel the two keep identical time.
 </p>
 <figure>
-<pre class="source" data-from="include/engine/crankshaft.hpp" data-lines="32-39" style="counter-reset: line 31"><span><i>// But an engine does not exhale through its flywheel. It exhales through two</i></span>
+<pre class="source said" data-from="include/engine/crankshaft.hpp" data-lines="32-39" style="counter-reset: line 31"><span><i>// But an engine does not exhale through its flywheel. It exhales through two</i></span>
 <span><i>// exhaust manifolds, one per bank, and the manifold does not hear the engine —</i></span>
 <span><i>// it hears its own four cylinders. Ask each bank what it heard:</i></span>
 <span><i>//</i></span>
@@ -558,8 +580,7 @@
   with. The code says what. The comments say why.
 </p>
 <figure>
-<pre class="source" data-from="include/engine/geometry.hpp" data-lines="103-113" style="counter-reset: line 102"><span></span>
-<span><i>// dV/dθ — the rate the chamber opens, per radian of crank. Positive on the</i></span>
+<pre class="source" data-from="include/engine/geometry.hpp" data-lines="104-114" style="counter-reset: line 103"><span><i>// dV/dθ — the rate the chamber opens, per radian of crank. Positive on the</i></span>
 <span><i>// way down. This is what turns pressure into torque: the work a gas does on</i></span>
 <span><i>// the crank in a small rotation is p·dV, so the instantaneous torque a</i></span>
 <span><i>// cylinder makes is p·(dV/dθ). The whole engine is that one product,</i></span>
@@ -568,8 +589,9 @@
 <span>    const double a = crank_radius_, l = rod_;</span>
 <span>    const double sin_t = std::sin(theta), cos_t = std::cos(theta);</span>
 <span>    const double root  = std::sqrt(l * l - a * a * sin_t * sin_t);</span>
-<span>    return piston_area_ * a * sin_t * (1.0 + a * cos_t <i>/</i> root);</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L103-L113">geometry.hpp</a> · lines 103–113</figcaption>
+<span>    return piston_area_ * a * sin_t * (1.0 + a * cos_t <i>/</i> root);</span>
+<span>}</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L104-L114">geometry.hpp</a> · lines 104–114</figcaption>
 </figure>
 
 <h3>The standard library, and nothing else</h3>
@@ -580,16 +602,16 @@
   written by hand:
 </p>
 <figure>
-<pre class="source" data-from="apps/wav.hpp" data-lines="52-60" style="counter-reset: line 51"><span></span>
-<span>tag(&quot;RIFF&quot;);  u32(36 + data_bytes);  tag(&quot;WAVE&quot;);</span>
+<pre class="source" data-from="apps/wav.hpp" data-lines="53-61" style="counter-reset: line 52"><span>tag(&quot;RIFF&quot;);  u32(36 + data_bytes);  tag(&quot;WAVE&quot;);</span>
 <span>tag(&quot;fmt &quot;);  u32(16);</span>
 <span>u16(1);                                   <i>// PCM, uncompressed</i></span>
 <span>u16(channels);</span>
 <span>u32(static_cast&lt;std::uint32_t&gt;(sample_rate));</span>
 <span>u32(byte_rate);</span>
 <span>u16(channels * 2);                               <i>// block align</i></span>
-<span>u16(16);                                         <i>// bits per sample</i></span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/wav.hpp#L52-L60">wav.hpp</a> · lines 52–60</figcaption>
+<span>u16(16);                                         <i>// bits per sample</i></span>
+<span>tag(&quot;data&quot;);  u32(data_bytes);</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/wav.hpp#L53-L61">wav.hpp</a> · lines 53–61</figcaption>
 </figure>
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
@@ -729,11 +751,14 @@
   gas solver, verified against Sod’s shock tube to one part in 10⁵, made header
   length worth 14% of torque, and collapsed the difference between the two
   crankshafts, which is the one measurement the project exists to make. It was
-  taken out. Intake runner tuning was built three times and shipped none, and
-  the third attempt ends like this:
+  taken out.
+</p>
+<p>
+  Intake runner tuning was built three times and shipped none, and the third
+  attempt ends like this:
 </p>
 <figure>
-<pre class="source" data-from="include/engine/induction.hpp" data-lines="88-91" style="counter-reset: line 87"><span><i>// AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain</i></span>
+<pre class="source said" data-from="include/engine/induction.hpp" data-lines="88-91" style="counter-reset: line 87"><span><i>// AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain</i></span>
 <span><i>// from 0.6 to 12 N·m per rpm, on a fresh engine per point, with the load</i></span>
 <span><i>// lagged or not. I do not know why. That is the next thing to find out, and</i></span>
 <span><i>// saying so is better than the explanation I would have to invent to avoid it.</i></span></pre>
@@ -752,8 +777,9 @@
 
 <footer>
   <p>
+    <code>make &amp;&amp; ./windsor spec</code><br>
     <span data-count="lines">3,733</span> lines of header-only C++23. A compiler
-    and <code>make</code>; there is nothing else to install.
+    and <code>make</code>, and nothing else to install.
   </p>
   <p>
     <a href="https://github.com/oddurs/windsor">The source</a> ·
@@ -1023,18 +1049,30 @@
     const audio = await context.decodeAudioData(file);
     const pipe = audio.getChannelData(0);
     const rows = Math.floor(ceiling / (audio.sampleRate / size));
-    const decibels = new Float32Array(columns * rows);
+    const power = new Float32Array(columns * rows);
     const re = new Float32Array(size), im = new Float32Array(size);
     for (let column = 0; column < columns; column++) {
       const centre = Math.floor((column / columns) * pipe.length);
       re.fill(0); im.fill(0);
       for (let n = 0; n < span; n++) re[n] = (pipe[centre - span / 2 + n] ?? 0) * hann[n];
       transform(re, im);
-      for (let row = 0; row < rows; row++)
-        decibels[column * rows + row] = 10 * Math.log10(re[row] ** 2 + im[row] ** 2 + 1e-12);
+      for (let row = 0; row < rows; row++) power[column * rows + row] = re[row] ** 2 + im[row] ** 2;
       // Let the page breathe: this is a second of arithmetic, and nobody
       // should feel it.
       if (column % 16 === 15) await new Promise((next) => setTimeout(next));
+    }
+    // Between two harmonics a windowed transform has nulls, and on a decibel
+    // scale a null is a pinhole. Each point is the mean power of itself and
+    // its eight neighbours, which is what an analyser's averaging does.
+    const decibels = new Float32Array(columns * rows);
+    for (let column = 0; column < columns; column++) {
+      for (let row = 0; row < rows; row++) {
+        let sum = 0, count = 0;
+        for (let c = Math.max(0, column - 1); c <= Math.min(columns - 1, column + 1); c++)
+          for (let r = Math.max(0, row - 1); r <= Math.min(rows - 1, row + 1); r++, count++)
+            sum += power[c * rows + r];
+        decibels[column * rows + row] = 10 * Math.log10(sum / count + 1e-12);
+      }
     }
     return { rows, decibels };
   };

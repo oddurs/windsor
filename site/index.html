@@ -174,14 +174,16 @@
      reserved for physical quantities: a number with its unit on it. */
   pre.source i { color: var(--muted); font-style: normal; }
   pre.source em { color: var(--amber); font-style: normal; }
-  /* A passage that is all comment is the author speaking, and is set in ink. */
-  pre.source.said i { color: var(--ink); }
-  /* On a phone a comment is prose and is allowed to wrap, each line hanging
-     under its own words and not under its slashes. Code never wraps. */
-  @media (max-width: 45.99rem) {
-    pre.said { white-space: pre-wrap; }
-    pre.said > span { box-sizing: border-box; display: inline-block; padding-left: 3ch; text-indent: -3ch; width: 100%; }
-  }
+  /* A passage that is all comment is the author speaking, so it is set as
+     speech: in the text face, without its slashes, behind a rule, and
+     attributed to the lines it came from. Anything the comment laid out by
+     hand keeps its columns. */
+  blockquote { border-left: 2px solid var(--rule); margin: 0; padding: 0.125rem 0 0.125rem 1.5rem; }
+  blockquote p { margin: 0.875rem 0; }
+  blockquote > :first-child { margin-top: 0; }
+  blockquote > :last-child { margin-bottom: 0; }
+  blockquote pre { font-size: 0.75rem; margin: 1rem 0; }
+  blockquote + figcaption { padding-left: calc(1.5rem + 2px); }
   figcaption.where { font-size: 0.8125rem; }
   figcaption.where a { text-decoration-color: transparent; }
   figcaption.where a:hover { text-decoration-color: var(--faint); }
@@ -296,16 +298,10 @@
 <audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
 
 <figure>
-<pre class="source said" data-from="apps/record.cpp" data-lines="3-12" style="counter-reset: line 2"><span><i>// This file contains no acoustics. Every sample it writes was computed by</i></span>
-<span><i>// `exhaust.hpp` out of gas leaving eight cylinders at moments decided by</i></span>
-<span><i>// `crankshaft.hpp`, and all this does is hold the throttle, drain the two</i></span>
-<span><i>// banks, add them together and put a RIFF header on the front.</i></span>
-<span><i>//</i></span>
-<span><i>// That is the claim the whole project is making, so it is worth stating in the</i></span>
-<span><i>// place where it is cashed: nothing here knows what a V8 sounds like. There is</i></span>
-<span><i>// no sample, no oscillator, no filter tuned by ear, no table of harmonics.</i></span>
-<span><i>// There is a crankshaft with its throws at 90°, and the noise is what that</i></span>
-<span><i>// implies.</i></span></pre>
+<blockquote data-from="apps/record.cpp" data-lines="3-12">
+<p>This file contains no acoustics. Every sample it writes was computed by <code>exhaust.hpp</code> out of gas leaving eight cylinders at moments decided by <code>crankshaft.hpp</code>, and all this does is hold the throttle, drain the two banks, add them together and put a RIFF header on the front.</p>
+<p>That is the claim the whole project is making, so it is worth stating in the place where it is cashed: nothing here knows what a V8 sounds like. There is no sample, no oscillator, no filter tuned by ear, no table of harmonics. There is a crankshaft with its throws at 90°, and the noise is what that implies.</p>
+</blockquote>
 <figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/record.cpp#L3-L12">record.cpp</a> · lines 3–12</figcaption>
 </figure>
 
@@ -331,14 +327,12 @@
   At the flywheel the two keep identical time.
 </p>
 <figure>
-<pre class="source said" data-from="include/engine/crankshaft.hpp" data-lines="32-39" style="counter-reset: line 31"><span><i>// But an engine does not exhale through its flywheel. It exhales through two</i></span>
-<span><i>// exhaust manifolds, one per bank, and the manifold does not hear the engine —</i></span>
-<span><i>// it hears its own four cylinders. Ask each bank what it heard:</i></span>
-<span><i>//</i></span>
-<span><i>//      CROSS-PLANE bank:   90° — 180° — 270° — 180°       lopsided</i></span>
-<span><i>//      FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</i></span>
-<span><i>//</i></span>
-<span><i>// That is the entire difference. That is the burble and that is the shriek.</i></span></pre>
+<blockquote data-from="include/engine/crankshaft.hpp" data-lines="32-39">
+<p>But an engine does not exhale through its flywheel. It exhales through two exhaust manifolds, one per bank, and the manifold does not hear the engine — it hears its own four cylinders. Ask each bank what it heard:</p>
+<pre>CROSS-PLANE bank:   90° — 180° — 270° — 180°       lopsided
+FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
+<p>That is the entire difference. That is the burble and that is the shriek.</p>
+</blockquote>
 <figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L32-L39">crankshaft.hpp</a> · lines 32–39</figcaption>
 </figure>
 <p>
@@ -758,10 +752,9 @@
   attempt ends like this:
 </p>
 <figure>
-<pre class="source said" data-from="include/engine/induction.hpp" data-lines="88-91" style="counter-reset: line 87"><span><i>// AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain</i></span>
-<span><i>// from 0.6 to 12 N·m per rpm, on a fresh engine per point, with the load</i></span>
-<span><i>// lagged or not. I do not know why. That is the next thing to find out, and</i></span>
-<span><i>// saying so is better than the explanation I would have to invent to avoid it.</i></span></pre>
+<blockquote data-from="include/engine/induction.hpp" data-lines="88-91">
+<p>AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain from 0.6 to 12 N·m per rpm, on a fresh engine per point, with the load lagged or not. I do not know why. That is the next thing to find out, and saying so is better than the explanation I would have to invent to avoid it.</p>
+</blockquote>
 <figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/induction.hpp#L88-L91">induction.hpp</a> · lines 88–91</figcaption>
 </figure>
 <p>

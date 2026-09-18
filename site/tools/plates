@@ -12,6 +12,12 @@ index.html names where it came from, and this tool holds it to that.
   the physical quantities, writes the caption that links to those lines, and,
   given data-diff="89-104", marks every token that differs from that passage.
 
+    <blockquote data-from="apps/record.cpp" data-lines="3-12">
+
+  A passage that is all comment is the author speaking, and is set as speech:
+  the slashes come off, the hard-wrapped lines are rejoined into paragraphs,
+  and anything the comment indented, a table or a figure, keeps its columns.
+
     <pre class="term" data-from="./windsor card">
 
   Something the program printed. Every line must appear in the real output, in
@@ -59,6 +65,14 @@ def passage(path, spec):
     return textwrap.dedent('\n'.join(lines[first - 1:last])).split('\n')
 
 
+def caption_for(path, spec):
+    (first, last), = ranges(spec)
+    name = pathlib.PurePath(path).name
+    where = f'line {first}' if first == last else f'lines {first}–{last}'
+    return (f'<figcaption class="where"><a href="{github}{path}#L{first}-L{last}">'
+            f'{name}</a> · {where}</figcaption>')
+
+
 token = re.compile(r'//.*|/\*.*?\*/|[\w.:]+|\S')
 quantity = re.compile(r'\d[\d.]*_[A-Za-z]+')
 
@@ -99,12 +113,45 @@ def source(attrs, body):
         parts.append(html.escape(line[at:]))
         out.append(f'<span>{"".join(parts)}</span>')
 
-    (first, last), = ranges(spec)
-    name = pathlib.PurePath(path).name
-    where = f'line {first}' if first == last else f'lines {first}–{last}'
-    caption = (f'<figcaption class="where"><a href="{github}{path}#L{first}-L{last}">'
-               f'{name}</a> · {where}</figcaption>')
-    return '\n'.join(out), f' style="counter-reset: line {first - 1}"', caption
+    (first, _), = ranges(spec)
+    return '\n'.join(out), f' style="counter-reset: line {first - 1}"', caption_for(path, spec)
+
+
+# ── Comment ───────────────────────────────────────────────────────────────
+
+def said(attrs, body):
+    path, spec = attrs['data-from'], attrs['data-lines']
+    lines = passage(path, spec)
+    if not all(line.startswith('//') for line in lines):
+        problems.append(f'{path} {spec} is not all comment, and is quoted as if it were')
+        return None
+    lines = [line[2:] for line in lines]
+
+    # A blank comment line ends a paragraph. A line indented past the rest is
+    # something the author laid out by hand, and keeps its layout.
+    blocks = []
+    for line in lines:
+        kind = None if not line.strip() else 'pre' if line.startswith('    ') else 'p'
+        if kind and blocks and blocks[-1][0] == kind:
+            blocks[-1][1].append(line)
+        elif kind:
+            blocks.append((kind, [line]))
+        else:
+            blocks.append((None, []))
+    out = []
+    for kind, held in blocks:
+        if kind == 'p':
+            text = html.escape(' '.join(line.strip() for line in held))
+            out.append('<p>' + re.sub(r'`([^`]+)`', r'<code>\1</code>', text) + '</p>')
+        elif kind == 'pre':
+            out.append('<pre>' + html.escape(textwrap.dedent('\n'.join(held))) + '</pre>')
+    fresh = '\n' + '\n'.join(out) + '\n'
+
+    squeeze = lambda markup: ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', markup)).split())
+    if body.strip() and squeeze(body) != squeeze(fresh):
+        problems.append(f'{path} {spec} no longer reads as the page quotes it')
+        return None
+    return fresh, '', caption_for(path, spec)
 
 
 # ── Output ────────────────────────────────────────────────────────────────
@@ -184,20 +231,21 @@ def term(attrs, body):
 # ── The page ──────────────────────────────────────────────────────────────
 
 plate = re.compile(
-    r'<pre(?P<attrs>[^>]*\bdata-from="[^"]+"[^>]*)>(?P<body>.*?)</pre>'
+    r'<(?P<tag>pre|blockquote)(?P<attrs>[^>]*\bdata-from="[^"]+"[^>]*)>(?P<body>.*?)</(?P=tag)>'
     r'(?P<caption>\n<figcaption class="where">.*?</figcaption>)?', re.S)
 
 
 def reset(found):
     attrs = dict(re.findall(r'([\w-]+)="([^"]*)"', found['attrs']))
-    made = (source if 'data-lines' in attrs else term)(attrs, found['body'])
+    kind = said if found['tag'] == 'blockquote' else source if 'data-lines' in attrs else term
+    made = kind(attrs, found['body'])
     if made is None:
         return found[0]
     body, style, caption = made
     if 'art' in attrs.get('class', ''):
         body = f'<span>{body}</span>'
     kept = re.sub(r' (style|data-fill)="[^"]*"', '', found['attrs'])
-    return f'<pre{kept}{style}>{body}</pre>' + (f'\n{caption}' if caption else '')
+    return f'<{found["tag"]}{kept}{style}>{body}</{found["tag"]}>' + (f'\n{caption}' if caption else '')
 
 
 page = index.read_text()

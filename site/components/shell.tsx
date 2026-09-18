@@ -91,7 +91,7 @@ const s = stylex.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginInline: 'auto',
-    maxWidth: layout.wide,
+    maxWidth: layout.column,
     paddingInline: layout.gutter,
     rowGap: space.sm,
     width: '100%',
@@ -104,8 +104,8 @@ const s = stylex.create({
   },
   wordmark: {
     color: color.ink,
-    fontFamily: font.mono,
     fontSize: size.small,
+    fontWeight: 500,
     letterSpacing: '0.01em',
     textDecoration: 'none',
   },

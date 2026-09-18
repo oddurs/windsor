@@ -129,14 +129,16 @@ export function Table({
 // the names are the argument and the descriptions are the footnotes.
 export function Terms({
   items,
+  code = false,
 }: {
   items: readonly { term: string; body: ReactNode }[];
+  code?: boolean;
 }) {
   return (
     <dl {...stylex.props(s.dl)}>
       {items.map((item) => (
         <div key={item.term} {...stylex.props(s.dlRow)}>
-          <dt {...stylex.props(s.dt)}>{item.term}</dt>
+          <dt {...stylex.props(s.dt, code && s.dtCode)}>{item.term}</dt>
           <dd {...stylex.props(s.dd)}>{item.body}</dd>
         </div>
       ))}
@@ -147,7 +149,7 @@ export function Terms({
 const s = stylex.create({
   article: {
     marginInline: 'auto',
-    maxWidth: layout.measure,
+    maxWidth: layout.column,
     paddingInline: layout.gutter,
   },
   masthead: {
@@ -165,7 +167,7 @@ const s = stylex.create({
     fontSize: size.base,
     lineHeight: leading.snug,
     marginBlock: space.sm,
-    maxWidth: '30rem',
+    maxWidth: '32rem',
   },
   section: {
     borderTopColor: color.rule,
@@ -187,20 +189,20 @@ const s = stylex.create({
   index: {
     color: color.faint,
     flexShrink: 0,
-    fontFamily: font.mono,
     fontSize: size.micro,
     fontWeight: 400,
+    fontVariantNumeric: 'tabular-nums',
     marginInlineStart: {
       default: '-1.75rem',
-      '@media (max-width: 40rem)': 0,
+      '@media (max-width: 44rem)': 0,
     },
     paddingInlineEnd: {
       default: 0,
-      '@media (max-width: 40rem)': space.sm,
+      '@media (max-width: 44rem)': space.sm,
     },
     width: {
       default: '1.75rem',
-      '@media (max-width: 40rem)': 'auto',
+      '@media (max-width: 44rem)': 'auto',
     },
   },
   p: {
@@ -293,8 +295,6 @@ const s = stylex.create({
     textAlign: 'end',
   },
   num: {
-    fontFamily: font.mono,
-    fontSize: size.tiny,
     fontVariantNumeric: 'tabular-nums',
     whiteSpace: 'nowrap',
   },
@@ -321,6 +321,10 @@ const s = stylex.create({
   },
   dt: {
     color: color.ink,
+    fontSize: size.small,
+    lineHeight: leading.snug,
+  },
+  dtCode: {
     fontFamily: font.mono,
     fontSize: size.tiny,
     lineHeight: leading.prose,

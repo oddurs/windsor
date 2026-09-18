@@ -13,6 +13,7 @@ import {
   Table,
   Title,
 } from '@/components/prose';
+import { Recording } from '@/components/recording';
 
 export const metadata: Metadata = {
   title: 'The argument',
@@ -194,10 +195,7 @@ WHAT EACH BANK HEARS
           much of the unevenness. That is real — it is why people have argued
           about H-pipes for sixty years — but it throws the evidence away.
         </Note>
-        <Cmd>
-          {`./windsor record          # the factory cross-plane crank
-./windsor record --flat   # a billet flat crank, same block, same everything`}
-        </Cmd>
+        <Recording />
         <P>
           One part changed. <A href="/evidence">The measurement →</A>
         </P>

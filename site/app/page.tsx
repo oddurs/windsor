@@ -11,7 +11,8 @@ import {
   Section,
   Table,
 } from '@/components/prose';
-import { color, font, leading, size, space } from '@/design/tokens.stylex';
+import { Recording } from '@/components/recording';
+import { color, leading, size, space } from '@/design/tokens.stylex';
 
 export default function Home() {
   return (
@@ -66,10 +67,12 @@ export default function Home() {
           So the test of the whole project is small and cruel: change{' '}
           <em>one part</em>, and the sound should change and nothing else.
         </P>
-        <Cmd>
-          {`./windsor record          # the factory cross-plane crank
-./windsor record --flat   # a billet flat crank, same block, same everything`}
-        </Cmd>
+        <Recording />
+        <P>
+          Press play, then change the crank while it is running. Same block,
+          same cam, same nine seconds — the recording does not restart, because
+          nothing about the engine restarted either.
+        </P>
       </Section>
 
       <Section index="2" heading="A firing order is not an input">
@@ -265,9 +268,8 @@ const s = stylex.create({
     paddingBlockEnd: space.sm,
   },
   name: {
-    fontFamily: font.mono,
     fontSize: size.head,
-    fontWeight: 500,
+    fontWeight: 600,
     letterSpacing: '-0.01em',
     lineHeight: leading.tight,
     margin: 0,
@@ -276,7 +278,7 @@ const s = stylex.create({
     fontSize: size.lead,
     lineHeight: leading.snug,
     marginBlock: space.sm,
-    maxWidth: '26rem',
+    maxWidth: '30rem',
   },
   terms: {
     color: color.muted,

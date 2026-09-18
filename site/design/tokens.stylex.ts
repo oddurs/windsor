@@ -28,13 +28,13 @@ export const font = stylex.defineVars({
 // larger than the last. Steps that close cannot shout, so hierarchy has to come
 // from weight, colour and space — which is the constraint that keeps a page calm.
 export const size = stylex.defineVars({
-  micro: '0.6875rem',
-  tiny: '0.75rem',
-  small: '0.8125rem',
-  base: '0.875rem',
-  lead: '0.9375rem',
-  title: '1.0625rem',
-  head: '1.1875rem',
+  micro: '0.75rem',
+  tiny: '0.8125rem',
+  small: '0.875rem',
+  base: '0.9375rem',
+  lead: '1rem',
+  title: '1.125rem',
+  head: '1.3125rem',
 });
 
 export const leading = stylex.defineVars({
@@ -57,7 +57,6 @@ export const space = stylex.defineVars({
 // About sixty-two characters at the base size. Long enough for an argument,
 // short enough that the eye finds the next line without being told.
 export const layout = stylex.defineVars({
-  measure: '33rem',
-  wide: '42rem',
+  column: '36rem',
   gutter: '1.5rem',
 });

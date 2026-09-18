@@ -165,13 +165,13 @@ export default function Engine() {
           the machine. They were written to be read in this order, each one
           assuming the last.
         </P>
-        <Terms items={spine} />
+        <Terms items={spine} code />
         <P>
           Stop there and you have the argument. Everything below is the machine
           that makes it audible.
         </P>
-        <Terms items={cylinder} />
-        <Terms items={machine} />
+        <Terms items={cylinder} code />
+        <Terms items={machine} code />
         <Note>
           Files named after people — Wiebe, Woschni — are named that way on
           purpose. Those are empirical curves somebody measured, not laws, and

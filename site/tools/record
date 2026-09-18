@@ -1,0 +1,11 @@
+#!/bin/sh
+# The two recordings on the site are output, not source. They are copies of
+# what the engine writes, and copies rot — so after any change to the model,
+# run this from site/ and commit what it produces.
+set -e
+cd "$(dirname "$0")/../.."
+make
+./windsor record
+./windsor record --flat
+mv windsor.wav windsor-flat.wav site/public/
+echo "site/public/ — refreshed from $(git rev-parse --short HEAD)"

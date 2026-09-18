@@ -39,4 +39,15 @@ for where, body in quotes:
             wrong += 1
     print(f'  {where:32s} {len(lines):3d} lines')
 
+# The phases under the player are the script in apps/record.cpp.
+script = (root / 'apps' / 'record.cpp').read_text()
+phases = re.findall(r'data-seconds="([^"]+)">([^<]+)<', page)
+if not phases:
+    sys.exit('no phases found in index.html — the anchor has moved')
+for seconds, what in phases:
+    if not re.search(rf'"{what}",\s+{re.escape(seconds)},.*true', script):
+        print(f'  not in apps/record.cpp: {what} for {seconds} s, recorded')
+        wrong += 1
+print(f'  {"apps/record.cpp":32s} {len(phases):3d} phases')
+
 sys.exit(f'{wrong} lines on the page are no longer true' if wrong else 0)

@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>windsor</title>
-<meta name="description" content="A Ford 302, modelled from first principles in C++23, for the sound. Change the crankshaft and hear it change.">
+<meta name="description" content="A Ford 302 V8, written in C++23, for the sound. Change the crankshaft and hear it change.">
 
 <!--
   One file, written by hand, and nothing to build. Every <pre data-from> below
@@ -36,11 +36,14 @@
     padding: 5rem 1.25rem;
   }
   h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.024em; line-height: 1.1; margin: 0; }
+  h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; margin: 4.5rem 0 0; }
   p { margin: 1.5rem 0; text-wrap: pretty; }
-  .tagline { font-size: 1.0625rem; margin: 0.5rem 0 2.5rem; }
+  .tagline { font-size: 1.0625rem; margin: 0.75rem 0 1.5rem; }
   a { color: inherit; text-underline-offset: 0.2em; }
+  code { font: 0.875em var(--mono); }
 
-  .player { align-items: center; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .player { background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.75rem 0 0.5rem; position: sticky; top: 0; z-index: 1; }
+  .controls { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem; }
   button {
     background: none;
     border: 1px solid var(--rule);
@@ -55,9 +58,11 @@
   button[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
   #play { color: var(--ink); padding: 0; width: 2.5rem; }
   #play svg { fill: currentColor; vertical-align: middle; }
-  .track { background: var(--rule); height: 1px; margin-top: 1rem; }
+  .track { background: var(--rule); height: 1px; margin-top: 0.75rem; }
   #run { background: var(--ink); height: 1px; width: 0; }
-  .hint { color: var(--faint); font-size: 0.875rem; margin: 0.75rem 0 2.5rem; }
+  .phases { color: var(--faint); display: flex; font: 0.6875rem/1 var(--mono); padding-top: 0.4rem; }
+  .phases span { border-left: 1px solid var(--rule); overflow: hidden; padding-left: 0.25rem; }
+  .hint { color: var(--muted); font-size: 0.875rem; margin: 1rem 0 0; }
 
   pre {
     background: var(--raised);
@@ -68,14 +73,15 @@
     overflow-x: auto;
     padding: 1rem 1.25rem;
   }
-  pre + pre { border-top: none; }
+  pre:not([hidden]) ~ pre { border-top: none; }
   pre i { color: var(--faint); font-style: normal; }
   mark { background: var(--mark); color: inherit; }
-  figure { margin: 0; }
-  figcaption { color: var(--faint); font: 0.75rem/1.6 var(--mono); padding-top: 0.5rem; }
+  figure { margin: 1.5rem 0; }
+  figcaption { color: var(--faint); font-size: 0.8125rem; padding-top: 0.5rem; }
 
-  .banks { margin: 2rem 0; }
-  .bank { border-bottom: 1px solid var(--rule); height: 2rem; position: relative; }
+  .banks { margin: 1.5rem 0; }
+  .bank { border-bottom: 1px solid var(--rule); height: 3.25rem; margin-top: 0.75rem; position: relative; }
+  .bank em { color: var(--faint); font: normal 0.6875rem/1 var(--mono); }
   .bank span {
     border-left: 1px solid var(--ink);
     bottom: 0;
@@ -86,24 +92,103 @@
     position: absolute;
   }
 
-  footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.875rem; margin-top: 4rem; padding-top: 1.5rem; }
-  footer code { color: var(--ink); font: 0.875rem var(--mono); }
+  footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.875rem; margin-top: 4.5rem; padding-top: 1.5rem; }
+  footer code { color: var(--ink); }
 </style>
 
 <h1>windsor</h1>
-<p class="tagline">A Ford 302, modelled from first principles in C++23, for the sound.</p>
+<p class="tagline">
+  A Ford 302 V8, written in C++. It has no graphics and it moves nothing. It
+  turns over, burns fuel that does not exist, and sounds like this.
+</p>
 
 <div class="player">
-  <button id="play" type="button" aria-label="Play"><svg viewBox="0 0 10 10" width="10" height="10"><path d="M1 0l9 5-9 5z"/></svg></button>
-  <button type="button" data-fit="cross" aria-pressed="true">cross-plane</button>
-  <button type="button" data-fit="flat" aria-pressed="false">flat-plane</button>
+  <div class="controls">
+    <button id="play" type="button" aria-label="Play"><svg viewBox="0 0 10 10" width="10" height="10"><path d="M1 0l9 5-9 5z"/></svg></button>
+    <button type="button" data-fit="cross" aria-pressed="true">cross-plane crank</button>
+    <button type="button" data-fit="flat" aria-pressed="false">flat-plane crank</button>
+  </div>
+  <div class="track"><div id="run"></div></div>
+  <div class="phases">
+    <span data-seconds="2.0">idle</span><span data-seconds="1.6">cruise</span><span data-seconds="3.2">pull</span><span data-seconds="2.2">overrun</span>
+  </div>
 </div>
-<div class="track"><div id="run"></div></div>
-<p class="hint">Press play, then change the crankshaft while it runs.</p>
+<p class="hint">
+  Nothing in it is a sample. Every pressure wave in those nine seconds was
+  computed, from a bore, a stroke, a camshaft and a crankshaft. Press play,
+  then fit the other crank while it runs.
+</p>
 
 <audio data-crank="cross" src="windsor.m4a" preload="metadata"></audio>
 <audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
 
+<h2>An engine, written down</h2>
+<p>
+  The source is meant to be read the way a shop manual is. You give it what
+  Ford's drawings give, in the units Ford used, and a bore is a different type
+  from a stroke, so the compiler will not let you swap them.
+</p>
+<figure>
+<pre data-from="include/engine/windsor.hpp">inline constexpr Geometry short_block() {
+    return Geometry{
+        Bore{4.000_in},            <i>// standard, before any overbore</i>
+        Stroke{3.000_in},
+        RodLength{5.090_in},       <i>// the C8OE rod. NOT the 289's, which is</i>
+                                   <i>// 5.155 in: Ford shortened it by 0.065 when</i>
+                                   <i>// the stroke grew from 2.870 to 3.000,</i>
+                                   <i>// because half of that 0.130 of extra</i>
+                                   <i>// stroke has to come out of the rod or the</i>
+                                   <i>// piston comes out of the top of the block</i></pre>
+<pre data-from="./windsor spec">  displacement         301.6 cu in             4942 cc</pre>
+<figcaption>What went in, and one line of what <code>./windsor spec</code> worked out from it. Ford rounded up.</figcaption>
+</figure>
+
+<h2>Why a Mustang does not sound like a Ferrari</h2>
+<p>
+  Both are V8s, and both fire evenly, once every 90° of rotation. The
+  difference is one part. Look down the nose of the crankshaft and its four
+  throws make either a cross or a line. This is the program's own drawing of
+  the one fitted now:
+</p>
+<figure>
+<pre data-crank="cross" data-from="./windsor spec">                   O
+                   .
+                   .
+             O.....+.....O
+                   .
+                   .
+                   O</pre>
+<pre data-crank="flat" data-from="./windsor spec --flat" hidden>                   O
+                   .
+                   .
+                   +
+                   .
+                   .
+                   O</pre>
+</figure>
+<p>
+  An engine does not exhale through its flywheel. It exhales through two
+  exhaust manifolds, and each one hears only its own four cylinders. This is
+  when each bank's cylinders fire, over two cycles:
+</p>
+<div class="banks" aria-hidden="true">
+  <div class="bank" data-bank="right"><em>right bank</em></div>
+  <div class="bank" data-bank="left"><em>left bank</em></div>
+</div>
+<p data-crank="cross">
+  On the cross, a bank coughs twice in quick succession, waits three quarters
+  of a turn, and coughs again. That limp is the burble. Now fit the flat crank.
+</p>
+<p data-crank="flat" hidden>
+  On the flat crank each bank breathes evenly. The limp is gone, and the
+  burble went with it. Same block, same cam, same nine seconds.
+</p>
+
+<h2>Nobody typed in the firing order</h2>
+<p>
+  This is the whole crankshaft as the source describes it: a bank angle, four
+  throws, and eight rods. It is what a foundry decides, and nothing more.
+</p>
 <figure>
 <pre data-crank="cross" data-from="include/engine/windsor.hpp">    return Crankshaft{
         90.0_deg,
@@ -133,45 +218,47 @@
     };</pre>
 <pre data-crank="cross" data-from="./windsor spec"><i>  ---- everything above was specified. everything below came out. ----</i>
 
-<b>CRANKSHAFT</b>
-  forging              cross-plane
   firing order         <span class="order">1-5-4-2-6-3-7-8</span>
-  the engine fires     every 90 deg, eight times per cycle
-
-<b>WHAT EACH BANK HEARS</b>
   right bank   cyl 1 4 2 3   fires at   180 -  90 - 180 - 270
   left  bank   cyl 5 6 7 8   fires at   270 - 180 -  90 - 180</pre>
 <pre data-crank="flat" data-from="./windsor spec --flat" hidden><i>  ---- everything above was specified. everything below came out. ----</i>
 
-<b>CRANKSHAFT</b>
-  forging              flat-plane
   firing order         <span class="order">1-5-2-6-3-7-4-8</span>
-  the engine fires     every 90 deg, eight times per cycle
-
-<b>WHAT EACH BANK HEARS</b>
   right bank   cyl 1 2 3 4   fires at   180 - 180 - 180 - 180
   left  bank   cyl 5 6 7 8   fires at   180 - 180 - 180 - 180</pre>
-<figcaption data-crank="cross">windsor.hpp, and what ./windsor spec makes of it</figcaption>
-<figcaption data-crank="flat" hidden>windsor.hpp, and what ./windsor spec --flat makes of it. Marked: everything that differs.</figcaption>
+<figcaption data-crank="cross">The source, and beneath it what the program printed.</figcaption>
+<figcaption data-crank="flat" hidden>The source, and beneath it what the program printed. Marked: everything that differs from the cross.</figcaption>
+</figure>
+<p>
+  1-5-4-2-6-3-7-8 is cast into the intake manifold of every 302 Ford built
+  in 1968. It is not an input here. The program is handed the forging and the
+  order falls out, and the limp with it, and the sound with that.
+</p>
+
+<h2>And it makes the power Ford said it did</h2>
+<figure>
+<pre data-from="./windsor dyno">  peak torque   307 lb-ft at 1985 rpm
+  peak power    206 hp    at 4994 rpm
+
+  Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400, gross.
+  Nothing here was fitted to those numbers.</pre>
 </figure>
 
-<div class="banks" aria-hidden="true">
-  <div class="bank" data-bank="right"></div>
-  <div class="bank" data-bank="left"></div>
-</div>
-
+<h2>Why</h2>
 <p>
-  A 90° V8 fires evenly on either crankshaft: every 90°, eight times a cycle.
-  But an engine exhales through two manifolds, and each one hears only its own
-  four cylinders. On a cross-plane crank a bank coughs twice, waits three
-  quarters of a turn, and coughs again. On a flat one it breathes evenly. That
-  is the whole difference between a Mustang and a Ferrari, and nobody typed it
-  in. The firing order is not an input. It falls out of the forging.
+  To find out whether the burble falls out of the geometry or has to be put
+  there by hand. It falls out. What that left behind is an engine that runs in
+  a terminal and cannot move anything, and does so correctly. It is not
+  useful. It is the most careful thing I have made.
 </p>
 
 <footer>
-  <p><code>make &amp;&amp; ./windsor</code></p>
-  <p>The standard library and nothing else. The source is the document: <a href="https://github.com/oddurs/windsor">github.com/oddurs/windsor</a></p>
+  <p><code>make &amp;&amp; ./windsor</code> &nbsp; A C++23 compiler, the standard library, and nothing else.</p>
+  <p>
+    <a href="https://github.com/oddurs/windsor">The source</a> ·
+    <a href="https://github.com/oddurs/windsor/blob/main/docs/reading-order.md">what order to read it in</a> ·
+    <a href="https://github.com/oddurs/windsor/blob/main/docs/reverted.md">what was built and taken out</a>
+  </p>
 </footer>
 
 <script>
@@ -195,7 +282,7 @@
       .textContent.split('-').map(Number);
     for (const bank of document.querySelectorAll('.bank')) {
       const right = bank.dataset.bank === 'right';
-      bank.replaceChildren();
+      bank.replaceChildren(bank.querySelector('em'));
       for (let cycle = 0; cycle < 2; cycle++) {
         order.forEach((cylinder, slot) => {
           if ((cylinder <= 4) !== right) return;
@@ -252,6 +339,10 @@
       show();
     };
   }
+
+  // The phases are the script in apps/record.cpp, each as wide as it is long.
+  for (const phase of document.querySelectorAll('.phases span'))
+    phase.style.flex = phase.dataset.seconds;
 
   draw();
 </script>

@@ -19,7 +19,7 @@ export default function Home() {
       <header {...stylex.props(s.masthead)}>
         <h1 {...stylex.props(s.name)}>windsor</h1>
         <p {...stylex.props(s.tagline)}>
-          A Ford 302, modelled from first principles in C++23, for no reason.
+          A Ford 302, modelled from first principles in C++23, for the sound.
         </p>
         <Cmd>make &amp;&amp; ./windsor spec</Cmd>
         <p {...stylex.props(s.terms)}>
@@ -237,9 +237,14 @@ export default function Home() {
 
       <Section index="7" heading="Why">
         <P>
-          No reason. That is the point. It is an engine that turns over in a
+          To find out whether the burble falls out of the geometry or has to be
+          put there by hand. It falls out — four numbers on a crankshaft, and
+          everything after them is arithmetic.
+        </P>
+        <P>
+          What the answer left behind is an engine that turns over in a
           terminal and cannot move anything, burning fuel that does not exist,
-          wasting a third of it out of a pipe into nowhere — and it does all of
+          wasting a third of it out of a pipe into nowhere, and doing all of
           that correctly.
         </P>
         <Cmd>

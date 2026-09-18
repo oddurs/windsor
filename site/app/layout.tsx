@@ -11,11 +11,11 @@ export const metadata: Metadata = {
     template: '%s — windsor',
   },
   description:
-    'A Ford 302, modelled from first principles in C++23, for no reason.',
+    'A Ford 302, modelled from first principles in C++23, for the sound.',
   openGraph: {
     title: 'windsor',
     description:
-      'A Ford 302, modelled from first principles in C++23, for no reason.',
+      'A Ford 302, modelled from first principles in C++23, for the sound.',
     type: 'website',
   },
 };

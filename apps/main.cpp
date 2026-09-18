@@ -18,7 +18,7 @@ engine::Engine engine_from_flags(int argc, char** argv) {
 } // namespace app
 
 static int usage() {
-    std::puts(R"(windsor — a Ford 302, modelled from first principles, for no reason.
+    std::puts(R"(windsor — a Ford 302, modelled from first principles, for the sound.
 
     windsor spec        what was built, and what falls out of it
     windsor dyno        put it on a water brake and sweep it

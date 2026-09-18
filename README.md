@@ -1,6 +1,6 @@
 # windsor
 
-A Ford 302, modelled from first principles in C++23, for no reason.
+A Ford 302, modelled from first principles in C++23, for the sound.
 
 ```
 make && ./windsor spec
@@ -333,8 +333,12 @@ years. The WAV writer is 44 bytes of header and some samples, written here.
 
 ## Why
 
-No reason. That is the point. It is an engine that turns over in a terminal
-and cannot move anything, burning fuel that does not exist, wasting a third of
-it out of a pipe into nowhere, and it does all of that correctly.
+To find out whether the burble falls out of the geometry or has to be put
+there by hand. It falls out — four numbers on a crankshaft, and everything
+after them is arithmetic.
+
+What the answer left behind is an engine that turns over in a terminal and
+cannot move anything, burning fuel that does not exist, wasting a third of it
+out of a pipe into nowhere, and doing all of that correctly.
 
 MIT.

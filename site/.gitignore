@@ -3,3 +3,7 @@ node_modules/
 next-env.d.ts
 *.tsbuildinfo
 .DS_Store
+
+# Written and re-added by `next dev` on every run. Not ours.
+AGENTS.md
+CLAUDE.md

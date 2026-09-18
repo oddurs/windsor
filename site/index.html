@@ -2,7 +2,8 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#121211">
 <title>windsor — a Ford 302 V8, written in C++23, for the sound</title>
 <meta name="description" content="A Ford 302 V8, written in C++23, for the sound. Change the crankshaft and hear it change.">
 <meta property="og:title" content="windsor">
@@ -19,29 +20,34 @@
 -->
 
 <style>
-  /* Greys, not colours. The subject is a cast-iron block and a paper shop
-     manual, and neither has ever needed a hue to be understood. The one
-     exception marks what differs between two crankshafts. */
+  /* One scheme, and it is dark. A terminal has been lit rather than printed
+     since before any of this engine was designed, and the page is mostly
+     terminal — so it is set once, for the light it is actually read in, rather
+     than twice for a switch nobody asked to throw.
+
+     Greys, and five hues that are rationed. The subject is a cast-iron block
+     and a paper shop manual, and neither has ever needed a hue to be
+     understood; these exist to separate what the program said from what it
+     was asked, and to mark what differs between two crankshafts.
+
+     The hues are solved rather than chosen. Picking them by eye gives as many
+     perceptual lightnesses as there are colours, and the eye reads that spread
+     as some of them shouting. Each is held at L* 79 instead and its channels
+     solved to land there, so every one sits within 0.08 of the same contrast:
+
+       on the panel   11.3:1 each        ink   15.6:1
+       on the page    10.7:1 each        muted  7.2:1   faint 4.5:1 */
   :root {
-    --paper: #fcfcfb; --raised: #f5f5f3; --ink: #141414;
-    --muted: #5f5f5d; --faint: #737370; --rule: #e4e4e1; --mark: #f1e3b4;
+    color-scheme: dark;
+    --paper: #121211; --raised: #0a0a09; --ink: #ebeae6;
+    --muted: #a1a09a; --faint: #7e7d78; --rule: #262523; --mark: #423715;
     --text: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     --hang: 0rem;
     --gutter: 0rem;
     --over: 0rem;
-    /* The terminal's colours are solved rather than chosen: each hue is held at
-       one lightness, so that none of them shouts. */
-    --coral: #ac4939; --amber: #7e652a; --mint: #277551;
-    --cyan: #2b7182; --sky: #3b67b2; --fog: #6d6d68;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #101010; --raised: #191919; --ink: #eaeae7;
-      --muted: #9a9a96; --faint: #7d7d79; --rule: #272727; --mark: #4a3f1a;
-      --coral: #efb3a9; --amber: #e2bc65; --mint: #3dda91;
-      --cyan: #73cee4; --sky: #a8c2ef; --fog: #7f7f79;
-    }
+    --coral: #ecb7af; --amber: #dfc078; --mint: #5fdaa1;
+    --cyan: #83cfe2; --sky: #aec5ec; --fog: #7e7d78;
   }
   /* Where there is room, the panels hang outside the column by exactly their
      own padding, so that code and prose share one left edge. */
@@ -1099,7 +1105,6 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
     }
   };
 
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
 
   draw();
   place();

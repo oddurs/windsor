@@ -25,9 +25,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Builds the engine and holds every plate on the page to the source it
-      # quotes and the output it shows. Stale, and nothing is published.
-      - run: site/tools/plates --check
+      # The engine builds, and every physical claim it makes still holds. Both
+      # of those are portable, so both are checked here.
+      - run: make
+      - run: ./windsor verify
+
+      # `site/tools/plates --check` is NOT run here, and the reason is worth
+      # writing down. It compares the page against the program's output
+      # character for character, and that output is not reproducible across
+      # platforms: nine seconds of sin, exp and pow through a different libm
+      # diverge in the last digit, which is enough to move a printed 0.6983 and
+      # to flip one character of a plot at a rounding boundary. The plates were
+      # set on the author's machine and can only be checked there, so the check
+      # is an authoring step — run it before committing. What CI can establish
+      # is that the engine still passes its own sixty-three, and it does that
+      # above.
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

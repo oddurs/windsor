@@ -1,0 +1,14 @@
+# Left over from when this site was a Next application. The page is one
+# hand-written file now and builds nothing, but the directories are still on
+# disk and must not be mistaken for source.
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Written and re-added by `next dev` on every run. Not ours.
+AGENTS.md
+CLAUDE.md
+
+.DS_Store

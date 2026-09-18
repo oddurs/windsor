@@ -1,11 +1,19 @@
 #!/bin/sh
 # The two recordings on the site are output, not source. They are copies of
 # what the engine writes, and copies rot — so after any change to the model,
-# run this from site/ and commit what it produces.
+# run this and commit what it produces.
+#
+# The engine writes WAV, because a WAV is a 44-byte header and some samples.
+# The site ships AAC, because nine seconds of stereo should not cost a visitor
+# a megabyte and a half. ffmpeg is a dependency of this script and of nothing
+# else.
 set -e
 cd "$(dirname "$0")/../.."
 make
 ./windsor record
 ./windsor record --flat
-mv windsor.wav windsor-flat.wav site/public/
-echo "site/public/ — refreshed from $(git rev-parse --short HEAD)"
+for take in windsor windsor-flat; do
+    ffmpeg -v error -y -i $take.wav -c:a aac -b:a 128k -movflags +faststart site/$take.m4a
+    rm $take.wav
+done
+echo "site/ — refreshed from $(git rev-parse --short HEAD)"

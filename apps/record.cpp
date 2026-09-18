@@ -101,15 +101,34 @@ constexpr Phase script[] = {
 };
 
 // A slow envelope on the louder of the two channels, and one gain applied to
-// both. Attack fast enough to catch the throttle opening, release slow enough
-// that it does not breathe between firing pulses — which at 690 rpm are 22
-// milliseconds apart, so the release has to be far longer than that or the
-// compressor will chew on the engine's own rhythm and turn it to mush.
+// both. Two things about it are easy to get wrong and this file got both of
+// them wrong first, so they are written down where the constants are.
+//
+// The threshold has to be a fraction of the material, not a number. Samples
+// arrive here in whatever units the physics left them in — this engine peaks
+// near two hundred of them — so a fixed 0.06 put the whole recording thirty to
+// forty decibels into gain reduction and turned three-to-one into a cube root.
+// That is not levelling, it is flattening, and it is audible as flattening.
+//
+// And the release has to be far longer than the CYCLE, not than the gap between
+// pulses. A cross-plane bank repeats every two revolutions — 174 ms at idle —
+// so a release of 250 ms rides the burble itself, turning up through the long
+// gap and down on the pair that follows it. That is precisely the shape the
+// recording exists to show, being ironed out by the thing meant to make it
+// audible. A second and a half is longer than anything the engine does at idle
+// and shorter than the drive cycle, so phases get levelled against each other
+// and the rhythm inside them is left alone.
 void level(std::vector<double>& left, std::vector<double>& right) {
-    constexpr double threshold = 0.06;
-    constexpr double ratio     = 3.0;
-    constexpr double attack    = 0.004;   // seconds
-    constexpr double release   = 0.250;
+    constexpr double below   = 0.10;    // threshold, 20 dB under the loudest
+    constexpr double ratio   = 3.0;
+    constexpr double attack  = 0.010;   // seconds
+    constexpr double release = 1.500;
+
+    double peak = 0.0;
+    for (std::size_t i = 0; i < left.size(); ++i)
+        peak = std::max(peak, std::max(std::abs(left[i]), std::abs(right[i])));
+    if (peak <= 0.0) return;
+    const double threshold = below * peak;
 
     const double up   = 1.0 - std::exp(-1.0 / (attack  * 44100.0));
     const double down = 1.0 - std::exp(-1.0 / (release * 44100.0));

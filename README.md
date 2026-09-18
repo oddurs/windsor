@@ -124,7 +124,7 @@ to:
 
 |             | model            | Ford, 1968 302-2V (gross) |
 | ----------- | ---------------- | ------------------------- |
-| peak torque | 306 lb-ft @ 1985 | 295 lb-ft @ 2400          |
+| peak torque | 307 lb-ft @ 1985 | 295 lb-ft @ 2400          |
 | peak power  | 206 hp @ 4994    | 210 hp @ 4400             |
 
 Within four percent and two, with nothing fitted. The magnitudes are close and
@@ -140,10 +140,10 @@ end gas has not gone off by itself. Throttled:
 
 | at 2000 rpm | gross     | pumping       | net       |
 | ----------- | --------- | ------------- | --------- |
-| wide open   | 11.94 bar | −0.07 bar     | 11.87 bar |
-| throttled   | 0.98 bar  | **−0.93 bar** | 0.05 bar  |
+| wide open   | 11.99 bar | −0.08 bar     | 11.90 bar |
+| throttled   | 0.97 bar  | **−0.93 bar** | 0.03 bar  |
 
-Ninety-five percent of everything it makes, spent on suffocating itself.
+Ninety-six percent of everything it makes, spent on suffocating itself.
 
 **The fuel, which is what stops the engine.** Livengood–Wu over Douaud–Eyzat:
 the end gas spends `dt/τ` of its patience each instant and goes off when the
@@ -175,8 +175,8 @@ revolutions instead of one:
 | -------------- | ----------- | ---------- | ---- |
 | one bank alone | **0.70**    | **0.0009** | 742× |
 
-Ninety-six percent of the energy sits below 90 Hz, where the burble lives, and
-nothing measurable above 1.4 kHz.
+Ninety-nine percent of the energy sits below 90 Hz, where the burble lives,
+and nothing measurable at all above 1.4 kHz.
 
 `./windsor record` writes stereo, because a V8 does not have an exhaust — it has
 two, down opposite sides of the car, permanently out of step on a cross-plane

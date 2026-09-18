@@ -471,7 +471,7 @@ void the_engine_running(Sheet& sheet) {
                      as::bar(e.bank(Bank::right).port_boundary(0).pressure), 0.3, 3.0, "bar");
         sheet.within("torque at 3000 rpm", as::lbft(e.torque()), 250.0, 320.0, "lb-ft");
         sheet.note("Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400,");
-        sheet.note("gross. the model makes 306 at 1985 and 206 at 4994.");
+        sheet.note("gross. the model makes 307 at 1985 and 206 at 4994.");
     }
 }
 

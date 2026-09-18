@@ -165,8 +165,11 @@ public:
                        spec_.reciprocating_mass, spec_.bore_spacing};
     }
 
-    // The two banks, for anyone holding a microphone.
-    Exhaust& bank(Bank b) { return banks_[b == Bank::left ? 0 : 1]; }
+    // The two banks, for anyone holding a microphone. The const overload is
+    // for anyone only reading a gauge: an instrument should not need to be
+    // able to change the engine in order to look at it.
+    Exhaust&       bank(Bank b)       { return banks_[b == Bank::left ? 0 : 1]; }
+    const Exhaust& bank(Bank b) const { return banks_[b == Bank::left ? 0 : 1]; }
 
     // ── The loop ──────────────────────────────────────────────────────────
     void step(double dtheta) {

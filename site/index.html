@@ -12,8 +12,8 @@
 <!--
   One file, written by hand, and nothing to build. Every block below that
   carries a data-from attribute is a copy of something the source says or the
-  program prints, and copies rot, so tools/check compares each line of them
-  against the real thing and the page is not published unless they agree.
+  program prints, and copies rot. So tools/plates sets each of them from the
+  real thing, and the page is not published unless they still agree.
 -->
 
 <style>
@@ -26,16 +26,23 @@
     --text: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     --hang: 0rem;
+    --gutter: 0rem;
+    /* The terminal's colours are solved rather than chosen: each hue is held at
+       one lightness, so that none of them shouts. */
+    --coral: #ac4939; --amber: #7e652a; --mint: #277551;
+    --cyan: #2b7182; --sky: #3b67b2; --fog: #6d6d68;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --paper: #101010; --raised: #191919; --ink: #eaeae7;
       --muted: #9a9a96; --faint: #7d7d79; --rule: #272727; --mark: #4a3f1a;
+      --coral: #efb3a9; --amber: #e2bc65; --mint: #3dda91;
+      --cyan: #73cee4; --sky: #a8c2ef; --fog: #7f7f79;
     }
   }
   /* Where there is room, the panels hang outside the column by exactly their
      own padding, so that code and prose share one left edge. */
-  @media (min-width: 46rem) { :root { --hang: 2rem; } }
+  @media (min-width: 46rem) { :root { --hang: 2rem; --gutter: 3.25rem; } }
 
   body {
     background: var(--paper);
@@ -54,7 +61,12 @@
   header { align-items: baseline; display: flex; justify-content: space-between; }
   header a { color: var(--muted); font-size: 0.875rem; }
   header a:hover { color: var(--ink); }
-  h2 { font-size: 1.3125rem; font-weight: 600; letter-spacing: -0.016em; line-height: 1.25; margin: 5rem 0 0; text-wrap: balance; }
+  h2 { border-top: 1px solid var(--rule); font-size: 1.3125rem; font-weight: 600; letter-spacing: -0.016em; line-height: 1.25; margin: 6rem 0 0; padding-top: 1.5rem; scroll-margin-top: 4rem; }
+  h2 b, nav b { color: var(--faint); font-variant-numeric: tabular-nums; font-weight: 400; margin-right: 0.5em; }
+  h3 { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.008em; line-height: 1.3; margin: 3.5rem 0 0; }
+  nav { color: var(--muted); display: flex; flex-wrap: wrap; font-size: 0.875rem; gap: 0.375rem 1.5rem; margin-top: 2.5rem; }
+  nav a { text-decoration: none; }
+  nav a:hover { color: var(--ink); }
   p { margin: 1.5rem 0; text-wrap: pretty; }
   .tagline { color: var(--muted); font-size: 1.1875rem; line-height: 1.45; margin: 0.75rem 0 2.5rem; }
   a { color: inherit; text-decoration-color: var(--faint); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
@@ -65,7 +77,8 @@
 
   /* Monospace is for what a compiler or a terminal produced. Everything a
      person reads as interface is set in the text face. */
-  .player { background: var(--paper); padding-top: 0.75rem; position: sticky; top: 0; z-index: 1; }
+  /* As wide as the widest thing that scrolls beneath it, so nothing shows past its ends. */
+  .player { background: var(--paper); margin-inline: calc(-1 * var(--gutter)); padding: 0.75rem var(--gutter) 0; position: sticky; top: 0; z-index: 1; }
   .controls { align-items: center; display: flex; gap: 0.875rem; }
   .label { color: var(--faint); font-size: 0.8125rem; }
   button { background: none; border: none; color: inherit; cursor: pointer; font: inherit; padding: 0; }
@@ -121,44 +134,82 @@
   .phases span { border-left: 1px solid var(--rule); overflow: hidden; padding: 0.125rem 0 0.125rem 0.375rem; }
 
   /* ── Source and output ──────────────────────────────────────────────────── */
+  /*
+     Two kinds of plate, and they are set differently because they are
+     different things. Source is something a person wrote, so it sits on the
+     paper like the prose around it, numbered as the file numbers it, with the
+     numbers hung in the margin. Output is something the machine said, so it
+     is set in a panel, under the command that produced it.
+  */
 
   figure { margin: 2rem 0; }
   figcaption { color: var(--faint); font-size: 0.875rem; padding-top: 0.625rem; }
-  pre {
+  pre { font: 0.78125rem/1.7 var(--mono); margin: 0; overflow-x: auto; tab-size: 4; }
+
+  pre.source { counter-reset: line; margin-left: calc(-1 * var(--gutter)); }
+  pre.source > span::before {
+    color: var(--faint);
+    content: counter(line);
+    counter-increment: line;
+    display: inline-block;
+    font-size: 0.6875rem;
+    opacity: 0.6;
+    padding-right: 1.25rem;
+    text-align: right;
+    width: calc(var(--gutter) - 1.25rem);
+  }
+  @media (max-width: 45.99rem) { pre.source > span::before { display: none; } }
+  /* The comments carry the argument, so they are not dimmed into the
+     background the way an editor would. The one colour in the source is
+     reserved for physical quantities: a number with its unit on it. */
+  pre.source i { color: var(--muted); font-style: normal; }
+  pre.source em { color: var(--amber); font-style: normal; }
+  figcaption.where { font-size: 0.8125rem; }
+  figcaption.where a { text-decoration-color: transparent; }
+  figcaption.where a:hover { text-decoration-color: var(--faint); }
+
+  pre.term {
     background: var(--raised);
     border: 1px solid var(--rule);
     border-radius: 3px;
-    font: 0.78125rem/1.65 var(--mono);
+    line-height: 1.45;
     margin: 0 calc(-1 * var(--hang));
-    overflow-x: auto;
     padding: 1.125rem 1rem 1.25rem calc(max(var(--hang), 1rem) - 1px);
-    tab-size: 4;
   }
-  pre[data-from]::before {
+  pre.term::before {
     border-bottom: 1px solid var(--rule);
     color: var(--faint);
-    content: attr(data-from);
+    content: "$ " attr(data-from);
     display: block;
     font-size: 0.6875rem;
     margin: -1.125rem -1rem 1rem calc(1px - max(var(--hang), 1rem));
     padding: 0.625rem 1rem 0.625rem calc(max(var(--hang), 1rem) - 1px);
   }
-  pre[data-from^="./"]::before { content: "$ " attr(data-from); }
-  figure > pre + pre, .swap + .swap pre { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
-  pre i { color: var(--faint); font-style: normal; }
+  figure > pre.term + pre.term { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+  .c1 { font-weight: 600; }
+  .c2 { color: var(--faint); }
+  .c31 { color: var(--coral); }
+  .c32 { color: var(--mint); }
+  .c33 { color: var(--amber); }
+  .c34 { color: var(--sky); }
+  .c36 { color: var(--cyan); }
+  .c90 { color: var(--fog); }
+  mark { background: var(--mark); border-radius: 1px; color: inherit; padding: 0.1em 0; }
+  mark em { color: inherit; }
   /* The drawing is printed with thirteen columns of indent. It keeps them,
      and is centred as a block by giving half of them back. */
   pre.art { text-align: center; }
   pre.art::before { text-align: left; }
-  pre.art span { display: inline-block; margin-left: -13ch; text-align: left; }
-  pre b { font-weight: 600; }
-  mark { background: var(--mark); border-radius: 1px; color: inherit; padding: 0.1em 0; }
+  pre.art > span { display: inline-block; margin-left: -13ch; text-align: left; }
 
   /* Both cranks occupy the same cell and only one is visible, so fitting the
      other never moves the sentence you were reading. */
   .swap { display: grid; }
   .swap > * { grid-area: 1 / 1; min-width: 0; }
   .swap > [hidden] { display: block !important; visibility: hidden; }
+  /* Except where the two differ so much in length that the space kept for
+     one reads as a hole under the other. */
+  .swap.loose > [hidden] { display: none !important; }
   .swap > p { margin: 0; }
   div.swap:has(> p) { margin: 1.5rem 0; }
 
@@ -215,49 +266,79 @@
   <div class="track"><div id="run"></div></div>
 </div>
 <p class="hint">
-  Nine seconds of an engine that does not exist. Nothing in it is a sample:
-  every pressure wave was computed, from a bore, a stroke, a camshaft and a
-  crankshaft. Press play, then fit the other crankshaft while it runs.
+  Nine seconds of an engine that does not exist. Press play, then fit the
+  other crankshaft while it runs.
 </p>
 
 <audio data-crank="cross" src="windsor.m4a" preload="metadata"></audio>
 <audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
 
-<h2>The question</h2>
+<figure>
+<pre class="source" data-from="apps/record.cpp" data-lines="3-12" style="counter-reset: line 2"><span><i>// This file contains no acoustics. Every sample it writes was computed by</i></span>
+<span><i>// `exhaust.hpp` out of gas leaving eight cylinders at moments decided by</i></span>
+<span><i>// `crankshaft.hpp`, and all this does is hold the throttle, drain the two</i></span>
+<span><i>// banks, add them together and put a RIFF header on the front.</i></span>
+<span><i>//</i></span>
+<span><i>// That is the claim the whole project is making, so it is worth stating in the</i></span>
+<span><i>// place where it is cashed: nothing here knows what a V8 sounds like. There is</i></span>
+<span><i>// no sample, no oscillator, no filter tuned by ear, no table of harmonics.</i></span>
+<span><i>// There is a crankshaft with its throws at 90°, and the noise is what that</i></span>
+<span><i>// implies.</i></span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/record.cpp#L3-L12">record.cpp</a> · lines 3–12</figcaption>
+</figure>
+
+<nav>
+  <a href="#argument"><b>I</b> The argument</a>
+  <a href="#method"><b>II</b> The method</a>
+  <a href="#instruments"><b>III</b> The instruments</a>
+  <a href="#omissions"><b>IV</b> What is not in it</a>
+</nav>
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+
+<h2 id="argument"><b>I</b> The argument</h2>
 <p>
   A Mustang burbles. A Ferrari shrieks. Both are 90° V8s, and I wanted to know
-  why they sound nothing alike. Not well enough to describe it. Well enough to
-  point at the part.
+  why they sound nothing alike: not well enough to describe it, well enough to
+  point at the part. And to find out whether that sound falls out of the
+  geometry, or has to be put there by hand.
 </p>
 <p>
   The usual answer is that the American engine fires unevenly. It does not.
   Both fire once every 90° of rotation, eight times a cycle, perfectly spaced.
   At the flywheel the two keep identical time.
 </p>
-
-<h2>What a manifold hears</h2>
+<figure>
+<pre class="source" data-from="include/engine/crankshaft.hpp" data-lines="32-39" style="counter-reset: line 31"><span><i>// But an engine does not exhale through its flywheel. It exhales through two</i></span>
+<span><i>// exhaust manifolds, one per bank, and the manifold does not hear the engine —</i></span>
+<span><i>// it hears its own four cylinders. Ask each bank what it heard:</i></span>
+<span><i>//</i></span>
+<span><i>//      CROSS-PLANE bank:   90° — 180° — 270° — 180°       lopsided</i></span>
+<span><i>//      FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</i></span>
+<span><i>//</i></span>
+<span><i>// That is the entire difference. That is the burble and that is the shriek.</i></span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L32-L39">crankshaft.hpp</a> · lines 32–39</figcaption>
+</figure>
 <p>
-  An engine does not exhale through its flywheel. It exhales through two
-  exhaust manifolds, and each one is bolted to four cylinders and hears only
-  those four. Which of them fire when is decided by one part: the crankshaft,
-  whose four throws, seen from the nose, make either a cross or a line.
+  The part is the crankshaft. Seen from the nose, its four throws make either
+  a cross or a line.
 </p>
 <figure>
 <div class="swap">
-<pre class="art" data-crank="cross" data-from="./windsor spec"><span>                   O
-                   .
-                   .
-             O.....+.....O
-                   .
-                   .
-                   O</span></pre>
-<pre class="art" data-crank="flat" data-from="./windsor spec --flat" hidden><span>                   O
-                   .
-                   .
-                   +
-                   .
-                   .
-                   O</span></pre>
+<pre class="term art" data-crank="cross" data-from="./windsor spec"><span>      <span class="c1">             O</span>
+      <span class="c1">             .</span>
+      <span class="c1">             .</span>
+      <span class="c1">       O.....+.....O</span>
+      <span class="c1">             .</span>
+      <span class="c1">             .</span>
+      <span class="c1">             O</span></span></pre>
+<pre class="term art" data-crank="flat" data-from="./windsor spec --flat" hidden><span>      <span class="c1">             O</span>
+      <span class="c1">             .</span>
+      <span class="c1">             .</span>
+      <span class="c1">             +</span>
+      <span class="c1">             .</span>
+      <span class="c1">             .</span>
+      <span class="c1">             O</span></span></pre>
 </div>
 <figcaption>The program’s own drawing of the crank that is fitted now.</figcaption>
 </figure>
@@ -283,9 +364,8 @@
 <div class="swap">
 <p data-crank="cross">
   The engine ticks evenly. Alone, a bank coughs twice in quick succession,
-  waits three quarters of a turn, and coughs again. That limp, in each pipe,
-  out of step with the other, is the burble. Now fit the flat crank and listen
-  to one bank again.
+  waits three quarters of a turn, and coughs again. Now fit the flat crank and
+  listen to one bank again.
 </p>
 <p data-crank="flat" hidden>
   On the flat crank a bank alone is as even as the whole engine. Nothing
@@ -293,7 +373,7 @@
 </p>
 </div>
 
-<h2>What one tailpipe looks like</h2>
+<h3>What one tailpipe looks like</h3>
 <p>
   The picture at the top of the page is the recording from one tailpipe: time
   runs left to right, pitch runs upward to 500 Hz, and each rising line is a
@@ -304,141 +384,382 @@
 <figure class="scope" data-scope="flat"><canvas></canvas><div class="head"></div><b>flat-plane</b><small>500 Hz</small></figure>
 <p>
   The flat crank draws a clean ladder. The cross draws the same ladder with
-  more rungs between: energy at half orders, the mark of a pulse train that
-  takes two turns of the crank to repeat instead of one. The program measures
-  it, on one bank, at idle:
+  more rungs between. The program measures the difference:
 </p>
 <figure>
-<pre data-from="./windsor verify">  cross-plane bank, half-order share          0.6983          at least 0.3    ok
-  flat-plane bank, half-order share           0.0009409       0 to 0.1        ok
-  the cross-plane bank carries far more of it 742x                            ok
-  that ratio is the entire project, and it came out of four throw angles</pre>
+<pre class="term" data-from="./windsor verify"><span class="c1">THE THESIS</span>
+  <span class="c2">half-order energy is the signature of a pulse train that repeats</span>
+  <span class="c2">every two revolutions instead of one. one bank, at idle:</span>
+  cross-plane bank, half-order share          0.6983          at least 0.3    <span class="c32">ok</span>
+  flat-plane bank, half-order share           0.0009409       0 to 0.1        <span class="c32">ok</span>
+  the cross-plane bank carries far more of it 742x                            <span class="c32">ok</span>
+  <span class="c2">that ratio is the entire project, and it came out of four throw angles</span></pre>
 </figure>
+<p>It falls out.</p>
 
-<h2>Nobody typed in the firing order</h2>
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+
+<h2 id="method"><b>II</b> The method</h2>
 <p>
-  This is the whole crankshaft as the source describes it: a bank angle, four
-  throws, and eight rods. It is what a foundry decides, and nothing more.
+  This is not a simulator that happens to be readable. It is a piece of
+  writing that happens to run, and it keeps a few rules.
+</p>
+
+<h3>Derive, never declare</h3>
+<p>
+  A firing order is not an input. You forge a crank, you grind a cam, and the
+  order is whatever falls out. So the source specifies the forging, and
+  nothing downstream of it:
 </p>
 <figure>
-<div class="swap">
-<pre data-crank="cross" data-from="include/engine/windsor.hpp">    return Crankshaft{
-        90.0_deg,
-        { 45.0_deg, 315.0_deg, 135.0_deg, 225.0_deg },
-        {{
-        <i>//  cylinder    journal   bank          revolution</i>
-            <i>/* 1 */</i>     { 0,      Bank::right,  0 },
-            <i>/* 2 */</i>     { 1,      Bank::right,  0 },
-            <i>/* 3 */</i>     { 2,      Bank::right,  1 },
-            <i>/* 4 */</i>     { 3,      Bank::right,  0 },
-            <i>/* 5 */</i>     { 0,      Bank::left,   0 },
-            <i>/* 6 */</i>     { 1,      Bank::left,   1 },
-            <i>/* 7 */</i>     { 2,      Bank::left,   1 },
-            <i>/* 8 */</i>     { 3,      Bank::left,   1 },
-        }},
-        0.20                       <i>// kg·m², crank + damper + flywheel + clutch</i>
-    };</pre>
-<pre data-crank="flat" data-from="include/engine/windsor.hpp" hidden>    return Crankshaft{
-        90.0_deg,
-        { 45.0_deg, <mark>225.0_deg</mark>, <mark>45.0_deg</mark>, 225.0_deg },
-        {{  { 0, Bank::right, 0 }, { 1, Bank::right, 0 },
-            { 2, Bank::right, 1 }, { 3, Bank::right, <mark>1</mark> },
-            { 0, Bank::left,  0 }, { 1, Bank::left,  <mark>0</mark> },
-            { 2, Bank::left,  1 }, { 3, Bank::left,  1 }, }},
-        <mark>0.16</mark>                       <i>// lighter: a flat crank needs less</i>
-                                   <i>// counterweight, having less to cancel</i>
-    };</pre>
+<div class="swap loose">
+<div data-crank="cross">
+<pre class="source" data-from="include/engine/windsor.hpp" data-lines="88-105" style="counter-reset: line 87"><span>inline Crankshaft cross_plane_crank() {</span>
+<span>    return Crankshaft{</span>
+<span>        <em>90.0_deg</em>,</span>
+<span>        { <em>45.0_deg</em>, <em>315.0_deg</em>, <em>135.0_deg</em>, <em>225.0_deg</em> },</span>
+<span>        {{</span>
+<span>        <i>//  cylinder    journal   bank          revolution</i></span>
+<span>            <i>/* 1 */</i>     { 0,      Bank::right,  0 },</span>
+<span>            <i>/* 2 */</i>     { 1,      Bank::right,  0 },</span>
+<span>            <i>/* 3 */</i>     { 2,      Bank::right,  1 },</span>
+<span>            <i>/* 4 */</i>     { 3,      Bank::right,  0 },</span>
+<span>            <i>/* 5 */</i>     { 0,      Bank::left,   0 },</span>
+<span>            <i>/* 6 */</i>     { 1,      Bank::left,   1 },</span>
+<span>            <i>/* 7 */</i>     { 2,      Bank::left,   1 },</span>
+<span>            <i>/* 8 */</i>     { 3,      Bank::left,   1 },</span>
+<span>        }},</span>
+<span>        0.20                       <i>// kg·m², crank + damper + flywheel + clutch</i></span>
+<span>    };</span>
+<span>}</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L88-L105">windsor.hpp</a> · lines 88–105</figcaption>
 </div>
+<div data-crank="flat" hidden>
+<pre class="source" data-from="include/engine/windsor.hpp" data-lines="132-143" data-diff="88-105" style="counter-reset: line 131"><span>inline Crankshaft <mark>flat_plane_crank</mark>() {</span>
+<span>    return Crankshaft{</span>
+<span>        <em>90.0_deg</em>,</span>
+<span>        { <em>45.0_deg</em>, <mark><em>225.0_deg</em></mark>, <mark><em>45.0_deg</em></mark>, <em>225.0_deg</em> },</span>
+<span>        {{  { 0, Bank::right, 0 }, { 1, Bank::right, 0 },</span>
+<span>            { 2, Bank::right, 1 }, { 3, Bank::right, <mark>1</mark> },</span>
+<span>            { 0, Bank::left,  0 }, { 1, Bank::left,  <mark>0</mark> },</span>
+<span>            { 2, Bank::left,  1 }, { 3, Bank::left,  1 }, }},</span>
+<span>        <mark>0.16</mark>                       <i>// lighter: a flat crank needs less</i></span>
+<span>                                   <i>// counterweight, having less to cancel</i></span>
+<span>    };</span>
+<span>}</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L132-L143">windsor.hpp</a> · lines 132–143</figcaption>
+<figcaption>Marked: everything that differs from the cross-plane crank.</figcaption>
+</div>
+</div>
+</figure>
+<p>One short function works out the rest:</p>
+<figure>
+<pre class="source" data-from="include/engine/crankshaft.hpp" data-lines="170-177" style="counter-reset: line 169"><span><i>// The number cast into the intake manifold. Derived, never declared.</i></span>
+<span>std::array&lt;int, cylinder_count&gt; firing_order() const {</span>
+<span>    std::array&lt;int, cylinder_count&gt; order{};</span>
+<span>    for (int i = 0; i &lt; cylinder_count; ++i) order[i] = i + 1;</span>
+<span>    std::sort(order.begin(), order.end(),</span>
+<span>              [&amp;](int a, int b) { return tdc_[a - 1] &lt; tdc_[b - 1]; });</span>
+<span>    return order;</span>
+<span>}</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L170-L177">crankshaft.hpp</a> · lines 170–177</figcaption>
+</figure>
+<figure>
 <div class="swap">
-<pre data-crank="cross" data-from="./windsor spec"><i>  ---- everything above was specified. everything below came out. ----</i>
+<pre class="term" data-crank="cross" data-from="./windsor spec"><span class="c2">  ---- everything above was specified. everything below came out. ----</span>
 
-  firing order         <span class="order">1-5-4-2-6-3-7-8</span>
+  firing order         1-5-4-2-6-3-7-8
   right bank   cyl 1 4 2 3   fires at   180 -  90 - 180 - 270
   left  bank   cyl 5 6 7 8   fires at   270 - 180 -  90 - 180</pre>
-<pre data-crank="flat" data-from="./windsor spec --flat" hidden><i>  ---- everything above was specified. everything below came out. ----</i>
+<pre class="term" data-crank="flat" data-from="./windsor spec --flat" hidden><span class="c2">  ---- everything above was specified. everything below came out. ----</span>
 
-  firing order         <span class="order">1-5-2-6-3-7-4-8</span>
+  firing order         1-5-2-6-3-7-4-8
   right bank   cyl 1 2 3 4   fires at   180 - 180 - 180 - 180
   left  bank   cyl 5 6 7 8   fires at   180 - 180 - 180 - 180</pre>
 </div>
-<div class="swap"><figcaption data-crank="flat" hidden>Marked: everything that differs from the cross-plane crank.</figcaption></div>
 </figure>
 <p>
   1-5-4-2-6-3-7-8 is cast into the intake manifold of every 302 Ford built
-  in 1968. It is not an input here. Typing it in would have taken a second and
-  ended the project, because a program that has been told the answer cannot
-  surprise you. It is handed the forging, and the order falls out, and the
-  limp with it, and the sound with that.
+  in 1968. It was never typed in.
 </p>
 
-<h2>The rest is written the same way</h2>
+<h3>A bore is not a stroke</h3>
 <p>
-  The source is meant to be read the way a shop manual is. You give it what
-  Ford’s drawings give, in the units Ford used, and a bore is a different type
-  from a stroke, so the compiler checks the machinist’s work.
+  The domain is in the type system, and the compiler is a machinist checking
+  the work. A specification reads the way it is stamped on the part. Inches
+  exist at that surface and nowhere inside.
 </p>
 <figure>
-<pre data-from="include/engine/windsor.hpp">inline constexpr Geometry short_block() {
-    return Geometry{
-        Bore{4.000_in},            <i>// standard, before any overbore</i>
-        Stroke{3.000_in},
-        RodLength{5.090_in},       <i>// the C8OE rod. NOT the 289's, which is</i>
-                                   <i>// 5.155 in: Ford shortened it by 0.065 when</i>
-                                   <i>// the stroke grew from 2.870 to 3.000,</i>
-                                   <i>// because half of that 0.130 of extra</i>
-                                   <i>// stroke has to come out of the rod or the</i>
-                                   <i>// piston comes out of the top of the block</i></pre>
-<pre data-from="./windsor spec">  displacement         301.6 cu in             4942 cc</pre>
+<pre class="source" data-from="include/engine/geometry.hpp" data-lines="42-47" style="counter-reset: line 41"><span><i>// Named parameters. A cylinder is quoted as bore × stroke and you should not</i></span>
+<span><i>// be able to swap them by accident.</i></span>
+<span>struct Bore             { double m;     };  <i>// cylinder diameter</i></span>
+<span>struct Stroke           { double m;     };  <i>// full travel, TDC to BDC</i></span>
+<span>struct RodLength        { double m;     };  <i>// centre to centre</i></span>
+<span>struct CompressionRatio { double ratio; };  <i>// swept+clearance over clearance</i></span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L42-L47">geometry.hpp</a> · lines 42–47</figcaption>
+</figure>
+<figure>
+<pre class="source" data-from="include/engine/si.hpp" data-lines="62-62" style="counter-reset: line 61"><span>consteval double operator&quot;&quot;_in (long double v) { return double(v) * 0.0254;   }</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/si.hpp#L62-L62">si.hpp</a> · line 62</figcaption>
+</figure>
+<figure>
+<pre class="source" data-from="include/engine/windsor.hpp" data-lines="28-44" style="counter-reset: line 27"><span>inline constexpr Geometry short_block() {</span>
+<span>    return Geometry{</span>
+<span>        Bore{<em>4.000_in</em>},            <i>// standard, before any overbore</i></span>
+<span>        Stroke{<em>3.000_in</em>},</span>
+<span>        RodLength{<em>5.090_in</em>},       <i>// the C8OE rod. NOT the 289&#x27;s, which is</i></span>
+<span>                                   <i>// 5.155 in: Ford shortened it by 0.065 when</i></span>
+<span>                                   <i>// the stroke grew from 2.870 to 3.000,</i></span>
+<span>                                   <i>// because half of that 0.130 of extra</i></span>
+<span>                                   <i>// stroke has to come out of the rod or the</i></span>
+<span>                                   <i>// piston comes out of the top of the block</i></span>
+<span>        CompressionRatio{9.5}      <i>// 1968 2V, on leaded regular. The chamber</i></span>
+<span>                                   <i>// itself is only 53.5 cc; the rest of the</i></span>
+<span>                                   <i>// 72.7 cc of clearance volume is head</i></span>
+<span>                                   <i>// gasket, deck clearance and the dish in</i></span>
+<span>                                   <i>// the piston crown</i></span>
+<span>    };</span>
+<span>}</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L28-L44">windsor.hpp</a> · lines 28–44</figcaption>
+</figure>
+<figure>
+<pre class="term" data-from="./windsor spec">  displacement         301.6 cu in             4942 cc</pre>
 <figcaption>Ford rounded up.</figcaption>
 </figure>
-<p>
-  Behind that, each cylinder is an open thermodynamic system integrated in
-  crank angle: crank-slider kinematics, Wiebe combustion, Woschni heat loss,
-  compressible flow past the valves. The exhaust is a digital waveguide.
-  Inside the engine everything is SI, and inches exist only where a person
-  types them. It is header-only C++23 on the standard library and nothing
-  else, and it should still build in fifteen years.
-</p>
-
-<h2>Is it the engine Ford sold</h2>
+<p>A crank that cannot exist is refused:</p>
 <figure>
-<pre data-from="./windsor dyno">  peak torque   307 lb-ft at 1985 rpm
-  peak power    206 hp    at 4994 rpm
-
-  Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400, gross.
-  Nothing here was fitted to those numbers.</pre>
-<pre data-from="./windsor verify">  63 checks, all of them true.</pre>
+<pre class="source" data-from="include/engine/crankshaft.hpp" data-lines="262-282" style="counter-reset: line 261"><span><i>// A crank that cannot exist should not compile into an engine that runs.</i></span>
+<span>void validate() const {</span>
+<span>    std::array&lt;int, journal_count&gt; per_journal{};</span>
+<span>    for (const Rod&amp; r : rods_) {</span>
+<span>        if (r.journal &lt; 0 || r.journal &gt;= journal_count)</span>
+<span>            throw std::invalid_argument{&quot;rod hung on a journal that is not on this crank&quot;};</span>
+<span>        if (r.revolution != 0 &amp;&amp; r.revolution != 1)</span>
+<span>            throw std::invalid_argument{&quot;a four-stroke cylinder fires on revolution 0 or 1&quot;};</span>
+<span>        ++per_journal[r.journal];</span>
+<span>    }</span>
+<span>    for (int n : per_journal)</span>
+<span>        if (n != 2)</span>
+<span>            throw std::invalid_argument{&quot;every rod journal carries exactly two rods&quot;};</span>
+<span></span>
+<span>    <i>// No two cylinders may want the same instant: an engine that fires two</i></span>
+<span>    <i>// cylinders at once has thrown a rod through the block by lunchtime.</i></span>
+<span>    for (int a = 0; a &lt; cylinder_count; ++a)</span>
+<span>        for (int b = a + 1; b &lt; cylinder_count; ++b)</span>
+<span>            if (std::abs(tdc_[a] - tdc_[b]) &lt; 1e-9)</span>
+<span>                throw std::invalid_argument{&quot;two cylinders share a firing angle&quot;};</span>
+<span>}</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L262-L282">crankshaft.hpp</a> · lines 262–282</figcaption>
 </figure>
-<p>
-  Close, and wrong in a way I can name: the curve is too broad, with torque
-  peaking about 400 rpm low and power 600 high. The missing part is intake
-  runner tuning, which I built three times and shipped none of, along with a
-  nonlinear gas solver that was verified, measured and taken out.
-  <a href="https://github.com/oddurs/windsor/blob/main/docs/reverted.md">What
-  came out, and why</a> is written down, because a limitation somebody built
-  and reverted is a result.
-</p>
 
-<h2>Why</h2>
+<h3>Comments carry the argument</h3>
 <p>
-  To find out whether the burble falls out of the geometry or has to be put
-  there by hand. It falls out. What that left behind is an engine that runs in
-  a terminal and cannot move anything, and does so correctly. It is not
-  useful. It is the most careful thing I have made.
+  Every header opens by saying why the part exists and what it is arguing
+  with. The code says what. The comments say why.
 </p>
+<figure>
+<pre class="source" data-from="include/engine/geometry.hpp" data-lines="103-113" style="counter-reset: line 102"><span></span>
+<span><i>// dV/dθ — the rate the chamber opens, per radian of crank. Positive on the</i></span>
+<span><i>// way down. This is what turns pressure into torque: the work a gas does on</i></span>
+<span><i>// the crank in a small rotation is p·dV, so the instantaneous torque a</i></span>
+<span><i>// cylinder makes is p·(dV/dθ). The whole engine is that one product,</i></span>
+<span><i>// integrated, eight times over.</i></span>
+<span>double dV_dtheta(double theta) const {</span>
+<span>    const double a = crank_radius_, l = rod_;</span>
+<span>    const double sin_t = std::sin(theta), cos_t = std::cos(theta);</span>
+<span>    const double root  = std::sqrt(l * l - a * a * sin_t * sin_t);</span>
+<span>    return piston_area_ * a * sin_t * (1.0 + a * cos_t <i>/</i> root);</span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L103-L113">geometry.hpp</a> · lines 103–113</figcaption>
+</figure>
 
-<footer>
-  <p>A C++23 compiler and <code>make</code>. There is nothing else to install.</p>
-<pre data-from="./windsor">    windsor spec        what was built, and what falls out of it
+<h3>The standard library, and nothing else</h3>
+<p>
+  No graphics, no audio library, no build system beyond <code>make</code>.
+  Every dependency is a bet that something else will still build in fifteen
+  years. A WAV file is 44 bytes of header and then the numbers, so it is
+  written by hand:
+</p>
+<figure>
+<pre class="source" data-from="apps/wav.hpp" data-lines="52-60" style="counter-reset: line 51"><span></span>
+<span>tag(&quot;RIFF&quot;);  u32(36 + data_bytes);  tag(&quot;WAVE&quot;);</span>
+<span>tag(&quot;fmt &quot;);  u32(16);</span>
+<span>u16(1);                                   <i>// PCM, uncompressed</i></span>
+<span>u16(channels);</span>
+<span>u32(static_cast&lt;std::uint32_t&gt;(sample_rate));</span>
+<span>u32(byte_rate);</span>
+<span>u16(channels * 2);                               <i>// block align</i></span>
+<span>u16(16);                                         <i>// bits per sample</i></span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/wav.hpp#L52-L60">wav.hpp</a> · lines 52–60</figcaption>
+</figure>
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+
+<h2 id="instruments"><b>III</b> The instruments</h2>
+<p>
+  The engine is a sealed mechanism that turns and gets hot, and knows nothing
+  about being observed. Six instruments are bolted to it afterward, and none of
+  them may reach into the physics to make its own job easier.
+</p>
+<figure>
+<pre class="term" data-from="./windsor">    windsor spec        what was built, and what falls out of it
     windsor dyno        put it on a water brake and sweep it
     windsor run         watch it idle
     windsor card        let it draw its own picture, as Watt did
     windsor record      stand behind it with two microphones
     windsor verify      check every number this project quotes</pre>
+</figure>
+
+<h3>The indicator card</h3>
+<p>
+  Cylinder pressure against volume, for one cycle of one cylinder: the engine
+  drawing its own picture, as Watt’s did. Wide open, and then throttled, to
+  the same scale.
+</p>
+<figure>
+<pre class="term" data-from="./windsor card">  <span class="c1">WIDE OPEN THROTTLE</span>
+   59.4 |<span class="c1 c31">#####</span>
+   42.5 |<span class="c34">.   </span><span class="c1 c31">#####</span>
+   30.4 |<span class="c34">.       </span><span class="c1 c31">######</span>
+   21.7 |<span class="c34">..           </span><span class="c1 c31">#######</span>
+   15.5 | <span class="c34">...               </span><span class="c1 c31">########</span>
+   11.1 |   <span class="c34">....                   </span><span class="c1 c31">###########</span>
+    8.0 |      <span class="c34">.....                         </span><span class="c1 c31">#############</span>
+    5.7 |          <span class="c34">......                                </span><span class="c1 c31">##########</span>
+    4.1 |               <span class="c34">.......                                   </span><span class="c1 c31">#</span><span class="c90">.</span>
+    2.9 |                     <span class="c34">.........                            </span><span class="c90">.</span>
+    2.1 |                             <span class="c34">...........                </span><span class="c90">...</span>
+    1.5 |                          <span class="c90">............ </span><span class="c34">..............</span><span class="c90">....</span>
+    1.1 |<span class="c36">....................................................</span><span class="c34">.......</span>
+    0.8 |  <span class="c90">.......</span>
+    0.5 |
+    0.4 |
+    0.3 |
+    0.2 |
+    bar +------------------------------------------------------------
+         TDC                        volume                        BDC
+
+         gross 11.99 bar   pumping -0.08 bar   net 11.90 bar   peak 54.0 bar
+
+  <span class="c1">THROTTLE CLOSED</span>
+   59.4 |
+   42.5 |
+   30.4 |
+   21.7 |
+   15.5 |
+   11.1 |
+    8.0 |<span class="c34">.</span><span class="c1 c31">##</span>
+    5.7 |<span class="c34">. </span><span class="c1 c31">###</span>
+    4.1 | <span class="c34">.  </span><span class="c1 c31">#####</span>
+    2.9 | <span class="c34">...    </span><span class="c1 c31">#####</span>
+    2.1 |   <span class="c34">..       </span><span class="c1 c31">######</span>
+    1.5 |   <span class="c90">.</span><span class="c34">...</span><span class="c90">............................</span>
+    1.1 |<span class="c36">.</span><span class="c90">...  </span><span class="c34">.....             </span><span class="c1 c31">##########</span><span class="c90">.........................</span>
+    0.8 |<span class="c36">.         </span><span class="c34">......                 </span><span class="c1 c31">############             </span><span class="c90">.</span>
+    0.5 |<span class="c36">..             </span><span class="c34">.......                      </span><span class="c1 c31">###############</span>
+    0.4 | <span class="c36">..                  </span><span class="c34">........</span>
+    0.3 |  <span class="c36">..                        </span><span class="c34">...........</span>
+    0.2 |   <span class="c36">...................................</span><span class="c34">.....................</span>
+    bar +------------------------------------------------------------
+         TDC                        volume                        BDC
+
+         gross  0.97 bar   pumping -0.93 bar   net  0.03 bar   peak 7.3 bar
+
+  <span class="c1 c31">#</span> power   <span class="c90">.</span> exhaust   <span class="c36">.</span> intake   <span class="c34">.</span> compression
+
+  Throttled, the engine spends <span class="c1">96%</span> of everything it makes on
+  breathing. Wide open it spends 1%. That is the whole cost of
+  controlling a petrol engine by making it difficult to breathe, and it
+  is why a diesel, which throttles on fuel alone, is more efficient at
+  part load and barely more efficient at full.</pre>
+</figure>
+
+<h3>The dynamometer</h3>
+<figure>
+<pre class="term" data-from="./windsor dyno">  <span class="c33">lb-ft</span><span class="c36">                                                                 hp</span>
+   325 |       <span class="c33">**********</span>                                           |  225
+   305 |<span class="c33">********        **********           </span><span class="c36">ooooooooooooooooooooooo</span>|  211
+   284 |                         <span class="c33">******</span><span class="c32">###</span><span class="c36">oooo</span>                      |  197
+   264 |                          <span class="c36">oooooo </span><span class="c33">********</span>                   |  183
+   244 |                      <span class="c36">ooooo             </span><span class="c33">*******</span>             |  169
+   223 |                  <span class="c36">ooooo                       </span><span class="c33">*******</span>       |  155
+   203 |               <span class="c36">oooo                                 </span><span class="c33">******</span>  |  141
+   183 |            <span class="c36">oooo                                         </span><span class="c33">***</span>|  127
+   162 |         <span class="c36">oooo</span>                                               |  112
+   142 |      <span class="c36">oooo</span>                                                  |   98
+   122 |    <span class="c36">ooo</span>                                                     |   84
+   102 | <span class="c36">oooo</span>                                                       |   70
+    81 |<span class="c36">oo</span>                                                          |   56
+    61 |                                                            |   42
+    41 |                                                            |   28
+    20 |                                                            |   14
+        ------------------------------------------------------------
+        10    15    20    25    30    35   40    45    50    55    60  rpm/100
+
+       <span class="c33">*</span> torque    <span class="c36">o</span> power    <span class="c32">#</span> both
+
+  peak torque   307 lb-ft at 1985 rpm
+  peak power    206 hp    at 4994 rpm
+
+<span class="c2">  Ford rated the 1968 302-2V at 210 hp / 4400 and 295 lb-ft / 2400, gross.</span>
+<span class="c2">  Nothing here was fitted to those numbers.</span></pre>
+</figure>
+<p>
+  Close, and wrong in a way that can be named: the curve is too broad, with
+  torque peaking about 400 rpm low and power 600 high. The missing part is
+  intake runner tuning.
+</p>
+
+<h3>The inspection sheet</h3>
+<p>
+  Every number the project quotes is checked there, each against something outside
+  the project: a derivative against finite differences, a cylinder head
+  against a flow bench, a firing order against the casting, the thesis against
+  a Fourier transform.
+</p>
+<figure>
+<pre class="term" data-from="./windsor verify">  <span class="c1 c32">63 checks, all of them true.</span></pre>
+</figure>
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+
+<h2 id="omissions"><b>IV</b> What is not in it</h2>
+<p>
+  An unstated simplification is a lie, and a stated one is a design decision.
+  The two largest pieces of work in this project are not in it. A nonlinear
+  gas solver, verified against Sod’s shock tube to one part in 10⁵, made header
+  length worth 14% of torque, and collapsed the difference between the two
+  crankshafts, which is the one measurement the project exists to make. It was
+  taken out. Intake runner tuning was built three times and shipped none, and
+  the third attempt ends like this:
+</p>
+<figure>
+<pre class="source" data-from="include/engine/induction.hpp" data-lines="88-91" style="counter-reset: line 87"><span><i>// AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain</i></span>
+<span><i>// from 0.6 to 12 N·m per rpm, on a fresh engine per point, with the load</i></span>
+<span><i>// lagged or not. I do not know why. That is the next thing to find out, and</i></span>
+<span><i>// saying so is better than the explanation I would have to invent to avoid it.</i></span></pre>
+<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/induction.hpp#L88-L91">induction.hpp</a> · lines 88–91</figcaption>
+</figure>
+<p>
+  A limitation nobody attempted is a guess. A limitation somebody built,
+  measured and reverted is a result, and
+  <a href="https://github.com/oddurs/windsor/blob/main/docs/reverted.md">both are written down</a>.
+</p>
+<p>
+  What all of this left behind is an engine that turns over in a terminal and
+  cannot move anything, burning fuel that does not exist, and doing all of
+  that correctly.
+</p>
+
+<footer>
+  <p>
+    <span data-count="lines">3,733</span> lines of header-only C++23. A compiler
+    and <code>make</code>; there is nothing else to install.
+  </p>
   <p>
     <a href="https://github.com/oddurs/windsor">The source</a> ·
     <a href="https://github.com/oddurs/windsor/blob/main/docs/reading-order.md">what order to read it in</a> ·
-    <a href="https://github.com/oddurs/windsor/blob/main/docs/changing-it.md">how to fit a different cam or crank</a>
+    <a href="https://github.com/oddurs/windsor/blob/main/docs/changing-it.md">how to fit a different cam or crank</a> ·
+    MIT
   </p>
 </footer>
 
@@ -552,8 +873,8 @@
   // The ticks are drawn from the firing order the program printed, 90° apart,
   // cylinders 1-4 on the right bank. Two cycles, so the rhythm can be seen.
 
-  const order = () => document.querySelector(`pre[data-crank="${crank}"] .order`)
-    .textContent.split('-').map(Number);
+  const order = () => all(`pre[data-crank="${crank}"]`).map((pre) => pre.textContent)
+    .join('\n').match(/firing order\s+([\d-]+)/)[1].split('-').map(Number);
 
   const draw = () => {
     const firing = order();

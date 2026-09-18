@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""Set every quotation on the page from the thing it quotes, or check that it is.
+
+The page is one hand-written file, but it quotes the source and the program,
+and every quote is a copy, and copies rot. So each <pre data-from> in
+index.html names where it came from, and this tool holds it to that.
+
+    <pre class="source" data-from="include/engine/geometry.hpp" data-lines="103-113">
+
+  A passage of source. It must be exactly those lines, less their common
+  indent. The tool numbers them as the file does, dims the comments, picks out
+  the physical quantities, writes the caption that links to those lines, and,
+  given data-diff="89-104", marks every token that differs from that passage.
+
+    <pre class="term" data-from="./windsor card">
+
+  Something the program printed. Every line must appear in the real output, in
+  order. The tool finds each one there and restores the colours it was printed
+  in. data-fill="4-26,50" fills an empty plate from those lines of output, once.
+
+    site/tools/plates            rewrite the plates in place
+    site/tools/plates --check    change nothing; fail if anything would change
+
+An empty source plate is filled from its lines. A plate whose words no longer
+match is never silently refreshed, in either mode: the quotation was chosen by
+a person, and if the source has moved underneath it a person should look.
+"""
+import html
+import pathlib
+import re
+import subprocess
+import sys
+import textwrap
+
+root = pathlib.Path(__file__).resolve().parents[2]
+index = root / 'site' / 'index.html'
+github = 'https://github.com/oddurs/windsor/blob/main/'
+check = '--check' in sys.argv
+problems = []
+
+subprocess.run(['make'], cwd=root, check=True, capture_output=True)
+
+
+def ranges(spec):
+    for part in spec.split(','):
+        first, _, last = part.partition('-')
+        yield int(first), int(last or first)
+
+
+def words(markup):
+    return html.unescape(re.sub(r'<[^>]+>', '', markup)).split('\n')
+
+
+# ── Source ────────────────────────────────────────────────────────────────
+
+def passage(path, spec):
+    lines = (root / path).read_text().split('\n')
+    (first, last), = ranges(spec)
+    return textwrap.dedent('\n'.join(lines[first - 1:last])).split('\n')
+
+
+token = re.compile(r'//.*|/\*.*?\*/|[\w.:]+|\S')
+quantity = re.compile(r'\d[\d.]*_[A-Za-z]+')
+
+
+def tokens(lines):
+    return [t for line in lines for t in token.findall(line) if not t.startswith('/')]
+
+
+def source(attrs, body):
+    path, spec = attrs['data-from'], attrs['data-lines']
+    real = passage(path, spec)
+    if body.strip() and [w.rstrip() for w in words(body)] != [r.rstrip() for r in real]:
+        problems.append(f'{path} {spec} no longer reads as the page quotes it')
+        return None
+
+    # Tokens that differ from the passage this one is set against, by position.
+    # Both cranks are the same constructor, so their tokens line up one to one.
+    differs = set()
+    if 'data-diff' in attrs:
+        here, there = tokens(real), tokens(passage(path, attrs['data-diff']))
+        if len(here) != len(there):
+            problems.append(f'{path} {spec} no longer lines up with {attrs["data-diff"]}')
+        differs = {i for i, (a, b) in enumerate(zip(here, there)) if a != b}
+
+    out, n = [], 0
+    for line in real:
+        parts, at = [], 0
+        for found in token.finditer(line):
+            parts.append(html.escape(line[at:found.start()]))
+            text, at = html.escape(found.group()), found.end()
+            if found.group().startswith('/'):
+                parts.append(f'<i>{text}</i>')
+                continue
+            if quantity.fullmatch(found.group()):
+                text = f'<em>{text}</em>'
+            parts.append(f'<mark>{text}</mark>' if n in differs else text)
+            n += 1
+        parts.append(html.escape(line[at:]))
+        out.append(f'<span>{"".join(parts)}</span>')
+
+    (first, last), = ranges(spec)
+    name = pathlib.PurePath(path).name
+    where = f'line {first}' if first == last else f'lines {first}–{last}'
+    caption = (f'<figcaption class="where"><a href="{github}{path}#L{first}-L{last}">'
+               f'{name}</a> · {where}</figcaption>')
+    return '\n'.join(out), f' style="counter-reset: line {first - 1}"', caption
+
+
+# ── Output ────────────────────────────────────────────────────────────────
+
+printed = {}
+escape = re.compile(r'\033\[([0-9;]*)m')
+
+
+def output(command):
+    """What the command printed: each line plain, and each line as markup."""
+    if command in printed:
+        return printed[command]
+    # Run bare, the program prints its usage and exits 1, which is correct of
+    # it and not a failure of this.
+    run = subprocess.run(command.split(), cwd=root, check=command != './windsor',
+                         capture_output=True, text=True)
+    plain, marked, style = [], [], frozenset()
+    for line in (run.stdout + run.stderr).split('\n'):
+        # A style can be switched on in one line and off several later, so it
+        # is carried down the page the way a terminal carries it.
+        runs, at = [], 0
+        for found in escape.finditer(line):
+            runs.append((style, line[at:found.start()]))
+            at = found.end()
+            for code in (found.group(1) or '0').split(';'):
+                if code in ('', '0'):
+                    style = frozenset()
+                elif code in ('1', '2'):
+                    style = style | {code}
+                else:
+                    style = frozenset(c for c in style if c in ('1', '2')) | {code}
+        runs.append((style, line[at:]))
+
+        # The plots colour every character separately. Adjacent characters of
+        # one style become one span, and bare spaces between them join it.
+        merged = []
+        for look, text in runs:
+            if not text:
+                continue
+            if merged and (merged[-1][0] == look or (not look and not text.strip())):
+                merged[-1] = (merged[-1][0], merged[-1][1] + text)
+            else:
+                merged.append((look, text))
+        if merged:
+            merged[-1] = (merged[-1][0], merged[-1][1].rstrip())
+        plain.append(escape.sub('', line).rstrip())
+        marked.append(''.join(
+            f'<span class="{" ".join("c" + c for c in sorted(look))}">{html.escape(text)}</span>'
+            if look else html.escape(text) for look, text in merged if text))
+    printed[command] = plain, marked
+    return printed[command]
+
+
+def term(attrs, body):
+    command = attrs['data-from']
+    plain, marked = output(command)
+    if not body.strip() and 'data-fill' in attrs:
+        wanted = [i for first, last in ranges(attrs['data-fill']) for i in range(first - 1, last)]
+        return '\n'.join(marked[i] for i in wanted), '', None
+
+    out, at = [], 0
+    for line in words(body):
+        line = line.rstrip()
+        if not line:
+            out.append('')
+            continue
+        try:
+            at = plain.index(line, at)
+        except ValueError:
+            problems.append(f'{command} no longer prints: {line.strip()[:60]}')
+            return None
+        out.append(marked[at])
+        at += 1
+    return '\n'.join(out), '', None
+
+
+# ── The page ──────────────────────────────────────────────────────────────
+
+plate = re.compile(
+    r'<pre(?P<attrs>[^>]*\bdata-from="[^"]+"[^>]*)>(?P<body>.*?)</pre>'
+    r'(?P<caption>\n<figcaption class="where">.*?</figcaption>)?', re.S)
+
+
+def reset(found):
+    attrs = dict(re.findall(r'([\w-]+)="([^"]*)"', found['attrs']))
+    made = (source if 'data-lines' in attrs else term)(attrs, found['body'])
+    if made is None:
+        return found[0]
+    body, style, caption = made
+    if 'art' in attrs.get('class', ''):
+        body = f'<span>{body}</span>'
+    kept = re.sub(r' (style|data-fill)="[^"]*"', '', found['attrs'])
+    return f'<pre{kept}{style}>{body}</pre>' + (f'\n{caption}' if caption else '')
+
+
+page = index.read_text()
+plates = len(plate.findall(page))
+if not plates:
+    sys.exit('no plates found in index.html — the anchor has moved')
+fresh = plate.sub(reset, page)
+
+# The phases under the player are the script in apps/record.cpp.
+script = (root / 'apps' / 'record.cpp').read_text()
+phases = re.findall(r'data-seconds="([^"]+)">([^<]+)<', page)
+if not phases:
+    problems.append('no phases found in index.html — the anchor has moved')
+for seconds, what in phases:
+    if not re.search(rf'"{what}",\s+{re.escape(seconds)},.*true', script):
+        problems.append(f'apps/record.cpp does not record {what} for {seconds} s')
+
+# The colophon counts the engine.
+counted = sum(len(p.read_text().splitlines()) for p in (root / 'include' / 'engine').glob('*.hpp'))
+for quoted in re.findall(r'<span data-count="lines">([\d,]+)</span>', page):
+    if int(quoted.replace(',', '')) != counted:
+        problems.append(f'the engine is {counted} lines, and the page says {quoted}')
+
+for problem in problems:
+    print(f'  {problem}')
+if problems:
+    sys.exit(f'{len(problems)} things on the page are no longer true')
+if check and fresh != page:
+    sys.exit('the plates are stale: run site/tools/plates and look at the diff')
+if not check:
+    index.write_text(fresh)
+print(f'  {plates} plates, {len(phases)} phases, {counted} lines of engine: all true')

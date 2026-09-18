@@ -25,9 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Builds the engine and compares every line the page quotes against what
-      # the source says and the program prints.
-      - run: site/tools/check
+      # Builds the engine and holds every plate on the page to the source it
+      # quotes and the output it shows. Stale, and nothing is published.
+      - run: site/tools/plates --check
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

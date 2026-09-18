@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
+import { Output, Source, lines } from '@/components/code';
 import {
   A,
   Article,
-  Cmd,
   Code,
   Lede,
   Note,
@@ -14,17 +14,18 @@ import {
   Title,
 } from '@/components/prose';
 import { Recording } from '@/components/recording';
+import { output } from '@/content/output';
 
 export const metadata: Metadata = {
   title: 'The argument',
   description:
-    'Why a cross-plane V8 burbles, and why the program refuses to let you type in a firing order.',
+    'Why a cross-plane V8 burbles, and why I would not let the program be told the firing order.',
 };
 
 export default function Crankshaft() {
   return (
     <Article>
-      <Title sub="Why a cross-plane V8 burbles, and why the program refuses to let you type in a firing order.">
+      <Title sub="Why a cross-plane V8 burbles, and why I would not let the program be told the firing order.">
         The argument
       </Title>
 
@@ -34,16 +35,17 @@ export default function Crankshaft() {
           fires unevenly. It does not. Neither does a flat-plane one.
         </Lede>
         <P>
-          Eight cylinders, four strokes, 720° of crankshaft per cycle: 720
+          Eight cylinders, four strokes, 720° of crankshaft per cycle. 720
           divided by 8 is 90. Both engines put a power stroke on the flywheel
           every 90° of rotation, eight times per cycle, perfectly spaced. Hook
-          a torque transducer to the output shaft and the two are
-          indistinguishable in rhythm.
+          a torque transducer to the output shaft and there is nothing there to
+          tell them apart.
         </P>
         <P>
-          Which means the burble cannot be coming from the firing interval,
-          and every explanation that begins &ldquo;because it fires
-          unevenly&rdquo; is wrong about the part it is trying to explain.
+          Which means the burble is not coming from the firing interval, and
+          every explanation that starts &ldquo;because it fires
+          unevenly&rdquo; is wrong about the one part it is trying to explain.
+          I gave that explanation for years.
         </P>
       </Section>
 
@@ -55,7 +57,7 @@ export default function Crankshaft() {
           ever hear.
         </P>
         <P>
-          Take the even 90° train and throw away the half that belongs to the
+          So take the even 90° train and throw away the half belonging to the
           other bank. What is left depends entirely on where the throws are.
         </P>
         <Table
@@ -69,14 +71,14 @@ export default function Crankshaft() {
         <P>
           A cross-plane bank coughs twice in quick succession, waits three
           quarters of a turn, and coughs again. The other bank does the same
-          thing out of step, and the two pulse trains beat against each other
-          and never resolve. A flat-plane bank exhales in even thirds of a
-          revolution; both banks lock in phase and the harmonics stack cleanly
-          at twice the frequency.
+          thing out of step, the two trains beat against each other, and the
+          interference never resolves. A flat-plane bank exhales in even thirds
+          of a revolution; both banks lock in phase and the harmonics stack
+          cleanly at twice the frequency.
         </P>
         <P>
-          Four numbers on a crankshaft. That is the whole of it, and everything
-          else in the project exists to make it audible.
+          Four numbers on a crankshaft. Everything else in the project exists
+          to make that audible.
         </P>
       </Section>
 
@@ -85,16 +87,15 @@ export default function Crankshaft() {
           A firing order is not a design input. It is a result. You forge a
           crank, you hang eight rods on four journals, you grind a cam that
           decides which cylinder on each pin fires on the first revolution and
-          which on the second — and the firing order is whatever falls out.
-          Ford and Chevrolet got different orders from identical forgings for
-          exactly this reason.
+          which on the second — and the order is whatever falls out. Ford and
+          Chevrolet got different orders from identical forgings for exactly
+          that reason.
         </P>
         <P>
-          So the source specifies the forging, and refuses to accept anything
-          downstream of it.
+          So this is all the program is given. A bank angle, four throws, eight
+          rods, and which revolution each one takes.
         </P>
-        <Cmd>
-          {`Crankshaft{
+        <Source>{`Crankshaft{
     90.0_deg,
     { 45.0_deg, 315.0_deg, 135.0_deg, 225.0_deg },
     {{
@@ -102,32 +103,17 @@ export default function Crankshaft() {
         /* 1 */     { 0,      Bank::right,  0 },
         /* 2 */     { 1,      Bank::right,  0 },
         /* 3 */     { 2,      Bank::right,  1 },
-        ...`}
-        </Cmd>
+        ...`}</Source>
         <P>
-          It will also refuse to build a crank that cannot exist — two rods on
-          one journal, a bank that does not add up. What comes back out is a
-          shop manual page with a rule drawn across it:
+          It refuses to build a crank that cannot exist — two rods on one
+          journal, a bank that does not add up — and then it tells me what I
+          have made.
         </P>
-        <Cmd>
-          {`  ---- everything above was specified. everything below came out. ----
-
-CRANKSHAFT
-  forging              cross-plane
-  firing order         1-5-4-2-6-3-7-8
-  the engine fires     every 90 deg, eight times per cycle
-
-WHAT EACH BANK HEARS
-  right bank   cyl 1 4 2 3   fires at   180 -  90 - 180 - 270
-  left  bank   cyl 5 6 7 8   fires at   270 - 180 -  90 - 180
-
-  LOPSIDED. Each bank coughs twice in quick succession, waits three
-  quarters of a turn, and coughs again.
-  This is the burble.`}
-        </Cmd>
+        <Output from="./windsor spec">{lines(output.spec, 21, 38)}</Output>
         <P>
           1-5-4-2-6-3-7-8 is what is cast into a 1968 302 intake manifold. It
-          was never typed in.
+          was never typed in, and the day it first appeared there I went and
+          checked the casting to make sure I had not fooled myself.
         </P>
       </Section>
 
@@ -136,40 +122,35 @@ WHAT EACH BANK HEARS
           Fit the 1982 5.0 H.O. camshaft to the identical crankshaft — which is
           exactly what Ford did — and the order becomes 1-3-7-2-6-5-4-8, the
           351W order. The cam moved which cylinder on each pin takes the first
-          revolution; it did not move a single throw.
+          revolution. It did not move a single throw.
         </P>
         <Quote>
           Same crank, different cam, different firing order, identical sound —
           because the sound was never in the cam.
         </Quote>
         <P>
-          This is the sharpest test the model faces, and it is the reason the
-          firing order had to be derived. A lookup table would have produced
-          the right two orders and learned nothing from either.
+          This is the sharpest test the model faces and the reason the firing
+          order had to be derived. A lookup table would have produced both
+          orders correctly and learned nothing from either.
         </P>
       </Section>
 
-      <Section index="5" heading="What the burble costs">
+      <Section index="5" heading="What the burble cost">
         <P>
-          If the flat crank breathes more evenly and sounds better, the
-          question is why Detroit forged the other one eight million times.
-          Ask the same rod table a different question.
+          If the flat crank breathes more evenly and sounds better, then why
+          did Detroit forge the other one eight million times. Ask the same rod
+          table a different question and it tells you.
         </P>
-        <Table
-          head={['at 3000 rpm', 'cross-plane', 'flat-plane']}
-          rows={[
-            ['primary force', '0 N', '0 N'],
-            ['secondary force', '0 N', '5000 N'],
-          ]}
-          from="./windsor spec"
-        />
+        <Output from="./windsor spec">{lines(output.spec, 44, 66)}</Output>
         <P>
-          Secondary imbalance goes at twice crankshaft speed, and nothing
-          bolted to a shaft turning at ω can oppose a force that goes at 2ω.
-          The cross-plane&rsquo;s secondaries trace a circle, which
-          counterweights can take. The flat-plane&rsquo;s trace a line, which
-          nothing can. Half a tonne of force, a hundred times a second, into
-          the mounts.
+          A piston does not travel sinusoidally, so killing the once-per-turn
+          term with a counterweight leaves a twice-per-turn one behind, and
+          nothing bolted to a shaft turning at ω can cancel a force at 2ω. On
+          the cross-plane crank the secondaries cancel each other outright and
+          the primary couple traces a circle, which a counterweight can be
+          drawn to oppose. On a flat crank they trace a line. Half a tonne of
+          force, a hundred times a second, and a line is not something you can
+          chase with a rotating weight.
         </P>
         <P>
           The flat crank sounds better and shakes. That is the bill, and it is
@@ -190,20 +171,19 @@ WHAT EACH BANK HEARS
           Nothing is widened or panned. The image is the geometry, and moving
           the microphones moves it.
         </P>
+        <Recording />
         <Note>
           Summing to mono recombines the banks toward an even train and cancels
           much of the unevenness. That is real — it is why people have argued
-          about H-pipes for sixty years — but it throws the evidence away.
+          about H-pipes for sixty years — but it throws the evidence away, so
+          the file is stereo and stays that way.
         </Note>
-        <Recording />
         <P>
-          One part changed. <A href="/evidence">The measurement →</A>
-        </P>
-        <P>
-          The thesis lives in <Code>crankshaft.hpp</Code>, and the balance
+          The thesis lives in <Code>crankshaft.hpp</Code> and the balance
           argument in <Code>balance.hpp</Code>. If changing the crank ever
           stops changing the sound, the model has quietly stopped being true
-          and the project is over.
+          and the project is over.{' '}
+          <A href="/evidence">How I check that it has not →</A>
         </P>
       </Section>
     </Article>

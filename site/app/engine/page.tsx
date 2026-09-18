@@ -12,6 +12,7 @@ import {
   Terms,
   Title,
 } from '@/components/prose';
+import { Source } from '@/components/code';
 
 export const metadata: Metadata = {
   title: 'The engine',
@@ -109,9 +110,9 @@ export default function Engine() {
 
       <Section index="1" heading="One cylinder, as an open system">
         <Lede>
-          The physics has to be honest or the thesis proves nothing. So each
-          cylinder is integrated in crank angle, five terms of the first law
-          per radian.
+          The physics has to be honest or the thesis proves nothing, so I could
+          not take the shortcut. Each cylinder is integrated in crank angle,
+          five terms of the first law per radian.
         </Lede>
         <Cmd>
           {`m·cᵥ·dT/dθ  =  −p·dV/dθ           the piston, taking or giving work
@@ -125,14 +126,15 @@ export default function Engine() {
           the half of the cycle the air-standard Otto cycle deletes — the half
           where the valves are open and the mass is a variable. Pumping loss,
           volumetric efficiency, cam timing, reversion, the entire reason a
-          throttle costs you anything: all of it lives there.
+          throttle costs you anything: all of it lives in the half that the
+          textbook version throws away to make the integral tidy.
         </P>
         <P>
           γ varies with temperature, falling from 1.400 in a cold intake charge
-          to 1.246 in combustion products. A cycle computed at a constant 1.4
-          will promise you a fifth more thermal efficiency than any engine can
-          deliver, which is why the textbook number and the dynamometer have
-          never agreed.
+          to 1.246 in combustion products. Compute a cycle at a constant 1.4
+          and it will promise you a fifth more thermal efficiency than any
+          engine has ever delivered. That gap is not a mystery. It is a
+          constant somebody left alone.
         </P>
       </Section>
 
@@ -147,22 +149,23 @@ export default function Engine() {
           The loop is closed: each cylinder&rsquo;s exhaust boundary is the
           pressure standing in <em>its own primary pipe</em>, so a header has a
           length that matters and not merely a note. Only by about two percent
-          here, and the reason why is a measurement rather than an excuse.
+          here, and I would rather hand you the measurement of why than the
+          excuse.
         </P>
         <Note>
           A delay line has <em>no</em> numerical dissipation. It is the exact
           solution to the linear problem, not an approximation to it — which is
           why the cruder-looking model turned out to be the more faithful one.{' '}
-          <A href="/reverted">The solver that proved it →</A>
+          <A href="/evidence">The solver that proved it →</A>
         </Note>
       </Section>
 
       <Section index="3" heading="What is in it">
         <P>
           Every header opens with prose explaining why the part exists and what
-          it is arguing with — not what the code does, because the code does
-          that. The register is a service manual written by someone who likes
-          the machine. They were written to be read in this order, each one
+          it is arguing with — not what the code does, because the code already
+          does that. I was aiming for a service manual written by someone who
+          likes the machine. They are meant to be read in this order, each one
           assuming the last.
         </P>
         <Terms items={spine} code />
@@ -183,8 +186,9 @@ export default function Engine() {
         <P>
           The engine is a sealed mechanism that turns and gets hot and knows
           nothing about being observed. Six instruments are bolted to it
-          afterward, and none of them may reach into the physics to make its
-          own job easier.
+          afterwards, and none of them is allowed to reach into the physics to
+          make its own job easier. That rule cost me an afternoon twice and was
+          worth it both times.
         </P>
         <Cmd>
           {`./windsor spec       the shop manual page
@@ -205,8 +209,8 @@ export default function Engine() {
       <Section index="5" heading="What it does not model">
         <P>
           Stated plainly, because an unstated simplification is a lie and a
-          stated one is a design decision. Each is named in the file where it
-          bites.
+          stated one is a design decision. Each one is named in the file where
+          it bites, so nobody has to find it the hard way.
         </P>
         <Terms
           items={[
@@ -241,14 +245,12 @@ export default function Engine() {
           says what it was fitted to. There are five. Anything unmarked is
           Ford&rsquo;s.
         </P>
-        <Cmd>
-          {`short_block()          4.000 × 3.000, 5.090 in rods, 9.5:1
+        <Source>{`short_block()          4.000 × 3.000, 5.090 in rods, 9.5:1
 stock_cam()            266°/256°, 0.426/0.425 in lift, 117° ICL, 110.5° LSA
 
 cross_plane_crank()    the factory forging  →  1-5-4-2-6-3-7-8
 cross_plane_crank_ho() the same forging, 1982 cam  →  1-3-7-2-6-5-4-8
-flat_plane_crank()     a billet flat crank, same block, same rods`}
-        </Cmd>
+flat_plane_crank()     a billet flat crank, same block, same rods`}</Source>
         <P>
           Grind the throws into one plane and every bank interval goes to 180°.
           Hand <Code>Camshaft::from_card</Code> what a catalogue prints and it
@@ -260,7 +262,9 @@ flat_plane_crank()     a billet flat crank, same block, same rods`}
           Then run <Code>./windsor verify</Code>. Several of its checks belong
           to <em>this</em> engine — the flow bench, the cam card, the firing
           orders — and will fail honestly if you have built a different one.
-          That is the check doing its job.
+          That is the check doing its job. Edit the expectation to match the
+          engine you meant to build, and not before you are sure which of you
+          is wrong.
         </P>
       </Section>
     </Article>

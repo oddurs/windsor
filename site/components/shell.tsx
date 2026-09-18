@@ -12,8 +12,8 @@ import { color, font, layout, leading, size, space } from '@/design/tokens.style
 const pages = [
   { href: '/crankshaft', label: 'the argument' },
   { href: '/engine', label: 'the engine' },
-  { href: '/evidence', label: 'evidence' },
-  { href: '/reverted', label: 'reverted' },
+  { href: '/instruments', label: 'the instruments' },
+  { href: '/evidence', label: 'the evidence' },
 ] as const;
 
 const source = 'https://github.com/oddurs/windsor';
@@ -59,6 +59,8 @@ export function Shell({ children }: { children: ReactNode }) {
             checks them.
           </span>
           <span {...stylex.props(s.colophon)}>
+            <span>Oddur Sigurdsson</span>
+            <span aria-hidden>·</span>
             <a href={source} {...stylex.props(s.link)}>
               source
             </a>
@@ -80,7 +82,7 @@ const s = stylex.create({
     fontFamily: font.text,
     fontSize: size.base,
     lineHeight: leading.prose,
-    minHeight: '100dvh',
+    minHeight: '100vh',   // not dvh: it resizes as mobile toolbars collapse
   },
   // One column, centred, the same width everywhere. The header sits over the
   // text rather than across the window, so the page reads as a single sheet.

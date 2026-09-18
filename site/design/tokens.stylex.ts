@@ -15,6 +15,11 @@ export const color = stylex.defineVars({
   muted: { default: '#6a6a68', [dark]: '#8e8e8b' },
   faint: { default: '#9b9b98', [dark]: '#676764' },
   rule: { default: '#e3e3e0', [dark]: '#242424' },
+
+  // The one hue in the whole design, and it is rationed: a check that passed,
+  // two curves agreeing where they cross, a literal in the source. Patina,
+  // because that is what happens to metal that has been left alone.
+  patina: { default: '#3f6d59', [dark]: '#83b29b' },
 });
 
 // System fonts. The page should look like it belongs to the machine it is read

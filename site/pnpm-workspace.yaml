@@ -1,4 +1,0 @@
-# @swc/core is the Rust compiler StyleX is transformed by. It builds on install
-# and is meant to.
-allowBuilds:
-  '@swc/core': true

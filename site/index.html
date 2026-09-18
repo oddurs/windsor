@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>windsor</title>
+<meta name="description" content="A Ford 302, modelled from first principles in C++23, for the sound. Change the crankshaft and hear it change.">
+
+<!--
+  One file, written by hand, and nothing to build. Every <pre data-from> below
+  is a copy of something the source says or the program prints, and copies rot,
+  so tools/check compares each line of them against the real thing and the
+  page is not published unless they agree.
+-->
+
+<style>
+  :root {
+    --paper: #fcfcfb; --raised: #f5f5f3; --ink: #141414;
+    --muted: #5f5f5d; --faint: #737370; --rule: #e4e4e1; --mark: #f1e3b4;
+    --text: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #101010; --raised: #191919; --ink: #eaeae7;
+      --muted: #9a9a96; --faint: #7d7d79; --rule: #272727; --mark: #4a3f1a;
+    }
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 1rem/1.65 var(--text);
+    margin: 0 auto;
+    max-width: 40rem;
+    padding: 5rem 1.25rem;
+  }
+  h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.024em; line-height: 1.1; margin: 0; }
+  p { margin: 1.5rem 0; text-wrap: pretty; }
+  .tagline { font-size: 1.0625rem; margin: 0.5rem 0 2.5rem; }
+  a { color: inherit; text-underline-offset: 0.2em; }
+
+  .player { align-items: center; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  button {
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    color: var(--muted);
+    cursor: pointer;
+    font: 0.875rem/1 var(--mono);
+    height: 2.5rem;
+    padding: 0 1rem;
+  }
+  button:hover { border-color: var(--ink); }
+  button[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
+  #play { color: var(--ink); padding: 0; width: 2.5rem; }
+  #play svg { fill: currentColor; vertical-align: middle; }
+  .track { background: var(--rule); height: 1px; margin-top: 1rem; }
+  #run { background: var(--ink); height: 1px; width: 0; }
+  .hint { color: var(--faint); font-size: 0.875rem; margin: 0.75rem 0 2.5rem; }
+
+  pre {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font: 0.8125rem/1.6 var(--mono);
+    margin: 0;
+    overflow-x: auto;
+    padding: 1rem 1.25rem;
+  }
+  pre + pre { border-top: none; }
+  pre i { color: var(--faint); font-style: normal; }
+  mark { background: var(--mark); color: inherit; }
+  figure { margin: 0; }
+  figcaption { color: var(--faint); font: 0.75rem/1.6 var(--mono); padding-top: 0.5rem; }
+
+  .banks { margin: 2rem 0; }
+  .bank { border-bottom: 1px solid var(--rule); height: 2rem; position: relative; }
+  .bank span {
+    border-left: 1px solid var(--ink);
+    bottom: 0;
+    color: var(--faint);
+    font: 0.6875rem/1 var(--mono);
+    height: 1.5rem;
+    padding-left: 0.25rem;
+    position: absolute;
+  }
+
+  footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.875rem; margin-top: 4rem; padding-top: 1.5rem; }
+  footer code { color: var(--ink); font: 0.875rem var(--mono); }
+</style>
+
+<h1>windsor</h1>
+<p class="tagline">A Ford 302, modelled from first principles in C++23, for the sound.</p>
+
+<div class="player">
+  <button id="play" type="button" aria-label="Play"><svg viewBox="0 0 10 10" width="10" height="10"><path d="M1 0l9 5-9 5z"/></svg></button>
+  <button type="button" data-fit="cross" aria-pressed="true">cross-plane</button>
+  <button type="button" data-fit="flat" aria-pressed="false">flat-plane</button>
+</div>
+<div class="track"><div id="run"></div></div>
+<p class="hint">Press play, then change the crankshaft while it runs.</p>
+
+<audio data-crank="cross" src="windsor.m4a" preload="metadata"></audio>
+<audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
+
+<figure>
+<pre data-crank="cross" data-from="include/engine/windsor.hpp">    return Crankshaft{
+        90.0_deg,
+        { 45.0_deg, 315.0_deg, 135.0_deg, 225.0_deg },
+        {{
+        <i>//  cylinder    journal   bank          revolution</i>
+            <i>/* 1 */</i>     { 0,      Bank::right,  0 },
+            <i>/* 2 */</i>     { 1,      Bank::right,  0 },
+            <i>/* 3 */</i>     { 2,      Bank::right,  1 },
+            <i>/* 4 */</i>     { 3,      Bank::right,  0 },
+            <i>/* 5 */</i>     { 0,      Bank::left,   0 },
+            <i>/* 6 */</i>     { 1,      Bank::left,   1 },
+            <i>/* 7 */</i>     { 2,      Bank::left,   1 },
+            <i>/* 8 */</i>     { 3,      Bank::left,   1 },
+        }},
+        0.20                       <i>// kg·m², crank + damper + flywheel + clutch</i>
+    };</pre>
+<pre data-crank="flat" data-from="include/engine/windsor.hpp" hidden>    return Crankshaft{
+        90.0_deg,
+        { 45.0_deg, <mark>225.0_deg</mark>, <mark>45.0_deg</mark>, 225.0_deg },
+        {{  { 0, Bank::right, 0 }, { 1, Bank::right, 0 },
+            { 2, Bank::right, 1 }, { 3, Bank::right, <mark>1</mark> },
+            { 0, Bank::left,  0 }, { 1, Bank::left,  <mark>0</mark> },
+            { 2, Bank::left,  1 }, { 3, Bank::left,  1 }, }},
+        <mark>0.16</mark>                       <i>// lighter: a flat crank needs less</i>
+                                   <i>// counterweight, having less to cancel</i>
+    };</pre>
+<pre data-crank="cross" data-from="./windsor spec"><i>  ---- everything above was specified. everything below came out. ----</i>
+
+<b>CRANKSHAFT</b>
+  forging              cross-plane
+  firing order         <span class="order">1-5-4-2-6-3-7-8</span>
+  the engine fires     every 90 deg, eight times per cycle
+
+<b>WHAT EACH BANK HEARS</b>
+  right bank   cyl 1 4 2 3   fires at   180 -  90 - 180 - 270
+  left  bank   cyl 5 6 7 8   fires at   270 - 180 -  90 - 180</pre>
+<pre data-crank="flat" data-from="./windsor spec --flat" hidden><i>  ---- everything above was specified. everything below came out. ----</i>
+
+<b>CRANKSHAFT</b>
+  forging              flat-plane
+  firing order         <span class="order">1-5-2-6-3-7-4-8</span>
+  the engine fires     every 90 deg, eight times per cycle
+
+<b>WHAT EACH BANK HEARS</b>
+  right bank   cyl 1 2 3 4   fires at   180 - 180 - 180 - 180
+  left  bank   cyl 5 6 7 8   fires at   180 - 180 - 180 - 180</pre>
+<figcaption data-crank="cross">windsor.hpp, and what ./windsor spec makes of it</figcaption>
+<figcaption data-crank="flat" hidden>windsor.hpp, and what ./windsor spec --flat makes of it. Marked: everything that differs.</figcaption>
+</figure>
+
+<div class="banks" aria-hidden="true">
+  <div class="bank" data-bank="right"></div>
+  <div class="bank" data-bank="left"></div>
+</div>
+
+<p>
+  A 90° V8 fires evenly on either crankshaft: every 90°, eight times a cycle.
+  But an engine exhales through two manifolds, and each one hears only its own
+  four cylinders. On a cross-plane crank a bank coughs twice, waits three
+  quarters of a turn, and coughs again. On a flat one it breathes evenly. That
+  is the whole difference between a Mustang and a Ferrari, and nobody typed it
+  in. The firing order is not an input. It falls out of the forging.
+</p>
+
+<footer>
+  <p><code>make &amp;&amp; ./windsor</code></p>
+  <p>The standard library and nothing else. The source is the document: <a href="https://github.com/oddurs/windsor">github.com/oddurs/windsor</a></p>
+</footer>
+
+<script>
+  const takes = Object.fromEntries(
+    [...document.querySelectorAll('audio')].map((a) => [a.dataset.crank, a]));
+  const play = document.getElementById('play');
+  const run = document.getElementById('run');
+  const icon = play.querySelector('path');
+  let crank = 'cross';
+  let playing = false;
+
+  const show = () => {
+    icon.setAttribute('d', playing ? 'M1 0h3v10H1zM6 0h3v10H6z' : 'M1 0l9 5-9 5z');
+    play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  };
+
+  // The ticks are drawn from the firing order the program printed, 90° apart,
+  // cylinders 1-4 on the right bank. Two cycles, so the rhythm can be seen.
+  const draw = () => {
+    const order = document.querySelector(`pre[data-crank="${crank}"] .order`)
+      .textContent.split('-').map(Number);
+    for (const bank of document.querySelectorAll('.bank')) {
+      const right = bank.dataset.bank === 'right';
+      bank.replaceChildren();
+      for (let cycle = 0; cycle < 2; cycle++) {
+        order.forEach((cylinder, slot) => {
+          if ((cylinder <= 4) !== right) return;
+          const tick = document.createElement('span');
+          tick.textContent = cylinder;
+          tick.style.left = `${((cycle * 8 + slot) / 16) * 100}%`;
+          bank.append(tick);
+        });
+      }
+    }
+  };
+
+  // Fitting the other crank keeps your place in the recording: the same nine
+  // seconds, the same engine, one part changed.
+  const fit = (next) => {
+    if (next === crank) return;
+    const from = takes[crank];
+    const to = takes[next];
+    to.currentTime = from.currentTime;
+    from.pause();
+    if (playing) to.play();
+    crank = next;
+    for (const el of document.querySelectorAll('[data-crank]:not(audio)'))
+      el.hidden = el.dataset.crank !== crank;
+    for (const b of document.querySelectorAll('[data-fit]'))
+      b.setAttribute('aria-pressed', b.dataset.fit === crank);
+    draw();
+  };
+
+  play.onclick = () => {
+    playing = !playing;
+    if (playing) {
+      takes[crank].play();
+      // Once one take is playing the other is worth having ready.
+      const other = takes[crank === 'cross' ? 'flat' : 'cross'];
+      if (other.readyState === 0) other.load();
+    } else {
+      takes[crank].pause();
+    }
+    show();
+  };
+
+  for (const b of document.querySelectorAll('[data-fit]'))
+    b.onclick = () => fit(b.dataset.fit);
+
+  for (const a of Object.values(takes)) {
+    a.ontimeupdate = () => {
+      if (a === takes[crank]) run.style.width = `${(a.currentTime / a.duration) * 100}%`;
+    };
+    a.onended = () => {
+      playing = false;
+      a.currentTime = 0;
+      run.style.width = '0';
+      show();
+    };
+  }
+
+  draw();
+</script>
+</html>

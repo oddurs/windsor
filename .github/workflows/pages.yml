@@ -1,11 +1,12 @@
-# The site is five static pages. There is nothing to run, so nothing is run:
-# the build produces a directory and GitHub serves it.
+# The site is one page, written by hand. There is nothing to build, so nothing
+# is built — except the engine, because the page quotes it, and a quotation
+# that is no longer true does not get published.
 name: site
 
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths: ['site/**', 'include/**', 'apps/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -21,37 +22,17 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: site
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 12.3.4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: site/pnpm-lock.yaml
-
-      - run: pnpm install --frozen-lockfile
-
-      # The types are part of the build here. A site that compiles but does not
-      # typecheck is a site that is wrong somewhere it has not been clicked yet.
-      - run: pnpm typecheck
-
-      # Served from a project page, so everything lives under /windsor.
-      - run: pnpm build
-        env:
-          NEXT_PUBLIC_BASE_PATH: /windsor
+      # Builds the engine and compares every line the page quotes against what
+      # the source says and the program prints.
+      - run: site/tools/check
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site/out
+          path: site
 
   deploy:
     needs: build

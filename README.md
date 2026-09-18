@@ -226,7 +226,10 @@ about being observed. The six apps are instruments bolted to it afterward, and
 none of them may reach into the physics to make its own job easier.
 
 Every header opens with prose explaining why the part exists and what it is
-arguing with. They are meant to be read in roughly the order above.
+arguing with. [docs/reading-order.md](docs/reading-order.md) is the path
+through them; [docs/reverted.md](docs/reverted.md) is the two largest pieces of
+work in the project, neither of which is in it; and
+[docs/changing-it.md](docs/changing-it.md) is how to build a different engine.
 
 ---
 

@@ -6,7 +6,7 @@ A Ford 302, modelled from first principles in C++23, for the sound.
 make && ./windsor spec
 ```
 
-No dependencies. Nothing to configure. No website. It is an engine, and it runs.
+No dependencies. Nothing to configure. It is an engine, and it runs.
 
 ---
 
@@ -340,5 +340,8 @@ after them is arithmetic.
 What the answer left behind is an engine that turns over in a terminal and
 cannot move anything, burning fuel that does not exist, wasting a third of it
 out of a pipe into nowhere, and doing all of that correctly.
+
+The same argument, with the recordings playable and the instruments' own
+output set in type: **[oddurs.github.io/windsor](https://oddurs.github.io/windsor/)**
 
 MIT.

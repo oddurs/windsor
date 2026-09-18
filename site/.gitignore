@@ -7,3 +7,4 @@ next-env.d.ts
 # Written and re-added by `next dev` on every run. Not ours.
 AGENTS.md
 CLAUDE.md
+out/

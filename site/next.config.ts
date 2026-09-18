@@ -13,9 +13,27 @@ import type { NextConfig } from 'next';
 // the time the code executes it no longer knows where it was written.
 const root = process.cwd();
 
+// The site is served from a project page, which lives in a subdirectory. Next
+// rewrites its own asset URLs for that, but a path written by hand — the two
+// recordings — it cannot see, so the same value is published to the client and
+// used there. Empty locally, so `pnpm dev` still serves from the root.
+const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+
+  // A static export, because the site is five pages that were prerendered
+  // anyway and a server would be a thing to keep alive for no reason.
+  output: 'export',
+  images: { unoptimized: true },
+
+  // Pages serves directories, not extensionless files: /engine/index.html is
+  // found at /engine and /engine.html is not.
+  trailingSlash: true,
+
+  basePath: base,
+  assetPrefix: base.length > 0 ? base : undefined,
 };
 
 export default withStylexTurbopack({

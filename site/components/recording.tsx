@@ -11,14 +11,18 @@ import { color, font, leading, size, space } from '@/design/tokens.stylex';
 
 type Crank = 'cross' | 'flat';
 
+// Written by hand, so Next cannot rewrite it for the subdirectory the site is
+// served from. See next.config.ts.
+const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 const takes = {
   cross: {
-    src: '/windsor.wav',
+    src: `${base}/windsor.wav`,
     label: 'cross-plane',
     command: './windsor record',
   },
   flat: {
-    src: '/windsor-flat.wav',
+    src: `${base}/windsor-flat.wav`,
     label: 'flat-plane',
     command: './windsor record --flat',
   },

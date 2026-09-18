@@ -1,4 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { color, font, layout, leading, size, space } from '@/design/tokens.stylex';
@@ -68,9 +69,19 @@ export function Quote({ children }: { children: ReactNode }) {
   return <blockquote {...stylex.props(s.quote)}>{children}</blockquote>;
 }
 
+// An internal link goes through Link, which is the only thing that knows the
+// site is served from a subdirectory. Writing the href by hand works everywhere
+// except the one place it is deployed.
 export function A({ href, children }: { href: string; children: ReactNode }) {
+  if (href.startsWith('/')) {
+    return (
+      <Link href={href} {...stylex.props(s.a)}>
+        {children}
+      </Link>
+    );
+  }
   return (
-    <a href={href} {...stylex.props(s.a)}>
+    <a href={href} rel="noreferrer" {...stylex.props(s.a)}>
       {children}
     </a>
   );

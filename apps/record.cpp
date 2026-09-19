@@ -281,8 +281,33 @@ int app::record(int argc, char** argv) {
     // move when the engine gets loud.
     level(channel_left, channel_right);
 
+    // CALIBRATED. One full-scale reference for both crankshafts, because the
+    // two files exist to be compared and a file scaled to its own peak cannot
+    // be. Measured, the flat crank peaks at 69.3 against the cross-plane's
+    // 60.1 while carrying LESS energy — a cleaner train with taller spikes —
+    // so scaling each to its own peak turned a true 0.95 dB difference in
+    // loudness into 2.2 dB, all of it against the flat crank. In an A/B, 2 dB
+    // reads as better rather than different, and that is the one conclusion
+    // this recording must not put in the listener's ear for him.
+    //
+    // It is a number, so it can rot: if a change to the model makes a take
+    // louder than this, the take would clip, and the run says so and stops
+    // rather than quietly flattening its own peaks.
+    constexpr double full_scale = 80.0;
+
+    double loudest = 0.0;
+    for (std::size_t i = 0; i < channel_left.size(); ++i)
+        loudest = std::max(loudest, std::max(std::abs(channel_left[i]), std::abs(channel_right[i])));
+    if (loudest > full_scale) {
+        std::fprintf(stderr,
+                     "this take peaks at %.1f, over the %.1f reference in record.cpp.\n"
+                     "raise the reference and re-record BOTH cranks, or they stop comparing.\n",
+                     loudest, full_scale);
+        return 1;
+    }
+
     const char* path = output_path(argc, argv);
-    if (!wav::write(path, channel_left, channel_right, 44100)) {
+    if (!wav::write(path, channel_left, channel_right, 44100, full_scale)) {
         std::fprintf(stderr, "could not write %s\n", path);
         return 1;
     }

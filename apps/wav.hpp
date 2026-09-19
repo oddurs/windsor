@@ -26,10 +26,18 @@ namespace wav {
 // Both channels are normalised by the SAME factor. Scaling them independently
 // would make each one as loud as it could be and destroy the only thing a
 // second channel is for: the difference between them.
+//
+// `reference` extends that rule across FILES. Left at zero, each file is scaled
+// to its own peak, which is right for a single recording and wrong for two that
+// are meant to be compared: it makes every take equally loud and throws away
+// the difference in loudness between them, which is a real difference. Given a
+// reference instead, that number is full scale and the take lands wherever it
+// honestly falls beneath it.
 inline bool write(const char* path,
                   std::span<const double> left,
                   std::span<const double> right,
-                  int sample_rate)
+                  int sample_rate,
+                  double reference = 0.0)
 {
     constexpr int channels = 2;
     const std::size_t frames = std::min(left.size(), right.size());
@@ -38,7 +46,8 @@ inline bool write(const char* path,
     for (double s : left)  peak = std::max(peak, std::abs(s));
     for (double s : right) peak = std::max(peak, std::abs(s));
     if (peak <= 0.0) peak = 1.0;
-    const double gain = 0.89 * 32767.0 / peak;
+    const double full = reference > 0.0 ? reference : peak;
+    const double gain = 0.89 * 32767.0 / full;
 
     const std::uint32_t data_bytes = static_cast<std::uint32_t>(frames * 4);
     const std::uint32_t byte_rate  = static_cast<std::uint32_t>(sample_rate) * 4;

@@ -81,8 +81,43 @@ def caption_for(path, spec, quoted=False):
             f'{name}</a> · {where}</figcaption>')
 
 
-token = re.compile(r'//.*|/\*.*?\*/|[\w.:]+|\S')
+token = re.compile(r'''//.*|/\*.*?\*/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[\w.:]+|\S''')
 quantity = re.compile(r'\d[\d.]*_[A-Za-z]+')
+
+# What the language already distinguishes, marked as the language means it.
+#
+# Types get a colour of their own because in this project the types ARE the
+# argument: a Bore is not a Stroke, and the compiler is the machinist who
+# checks it. Keywords take weight rather than a hue — there are a great many
+# of them in C++ and they are scaffolding, not subject. Punctuation recedes,
+# which is most of what makes a dense line readable.
+keywords = {
+    'alignas', 'break', 'case', 'catch', 'class', 'const', 'consteval',
+    'constexpr', 'continue', 'default', 'delete', 'do', 'else', 'enum',
+    'explicit', 'export', 'extern', 'false', 'for', 'friend', 'if', 'inline',
+    'namespace', 'new', 'noexcept', 'nullptr', 'operator', 'private',
+    'protected', 'public', 'requires', 'return', 'sizeof', 'static',
+    'static_assert', 'struct', 'switch', 'template', 'this', 'throw', 'true',
+    'try', 'typename', 'union', 'using', 'virtual', 'while',
+}
+builtins = {
+    'auto', 'bool', 'char', 'double', 'float', 'int', 'long', 'short',
+    'signed', 'size_t', 'unsigned', 'void',
+}
+
+
+def role(text):
+    if text[0] == '"' or text[0] == "'":
+        return 's'
+    if quantity.fullmatch(text):
+        return None                      # <em>, and it keeps its own tag
+    if text in keywords:
+        return 'k'
+    if text in builtins or text.startswith('std::') or text[0].isupper():
+        return 't'
+    if not (text[0].isalnum() or text[0] == '_'):
+        return 'o'
+    return None
 
 
 def tokens(lines):
@@ -116,6 +151,10 @@ def source(attrs, body):
                 continue
             if quantity.fullmatch(found.group()):
                 text = f'<em>{text}</em>'
+            else:
+                kind = role(found.group())
+                if kind:
+                    text = f'<span class="{kind}">{text}</span>'
             parts.append(f'<mark>{text}</mark>' if n in differs else text)
             n += 1
         parts.append(html.escape(line[at:]))

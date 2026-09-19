@@ -46,6 +46,7 @@
     --hang: 0rem;
     --gutter: 0rem;
     --over: 0rem;
+    --buffered: #3a3a37;
     --coral: #ecb7af; --amber: #dfc078; --mint: #5fdaa1;
     --cyan: #83cfe2; --sky: #aec5ec; --fog: #7e7d78;
   }
@@ -114,8 +115,40 @@
   .choice button:hover { color: var(--ink); }
   .choice button[aria-pressed="true"] { background: var(--paper); box-shadow: 0 0 0 1px var(--rule), 0 1px 2px rgb(0 0 0 / 0.06); color: var(--ink); }
   #clock { color: var(--faint); font-size: 0.8125rem; font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; }
-  .track { background: var(--rule); height: 1px; margin-top: 0.75rem; }
-  #run { background: var(--ink); height: 1px; width: 0; }
+  /* A one-pixel line is the right weight and the wrong target, so the line
+     stays one pixel and the thing you can hit is twenty. It thickens under the
+     pointer rather than moving, because a control that moves when you approach
+     it is a control you have to chase. */
+  .track { cursor: pointer; margin-top: 0.125rem; padding-block: 0.625rem; touch-action: none; }
+  .track:focus-visible { outline: none; }
+  .rail { background: var(--rule); height: 1px; position: relative; transition: height 120ms; }
+  .track:hover .rail, .track:focus-visible .rail, .track.dragging .rail { height: 3px; }
+  #buffer, #run, #ghost { height: 100%; position: absolute; top: 0; }
+  #buffer { background: var(--buffered); width: 0; }
+  #run { background: var(--ink); width: 0; }
+  #run::after {
+    background: var(--ink);
+    border-radius: 50%;
+    content: '';
+    height: 0.5625rem;
+    position: absolute;
+    right: -0.28125rem;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    transition: transform 120ms;
+    width: 0.5625rem;
+  }
+  .track:hover #run::after, .track:focus-visible #run::after, .track.dragging #run::after { transform: translateY(-50%) scale(1); }
+  /* Where the pointer is, against where the sound is. */
+  #ghost { background: var(--faint); opacity: 0; width: 1px; }
+  .track:hover #ghost { opacity: 1; }
+  .track.dragging #ghost { opacity: 0; }
+  /* Waiting on the network, and saying so rather than looking broken. */
+  .player.stalled .rail, .player.stalled #clock { opacity: 0.45; }
+  .rail, #run::after, #play { transition-timing-function: ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .rail, #run::after, #play { transition: none; }
+  }
   .hint { color: var(--muted); font-size: 0.9375rem; margin: 1.25rem 0 0; }
   @media (max-width: 30rem) { .controls .label, #clock i { display: none; } }
   #clock i { font-style: normal; }
@@ -290,11 +323,14 @@
     </span>
     <output id="clock" aria-live="off">0:00</output>
   </div>
-  <div class="track"><div id="run"></div></div>
+  <div class="track" id="track" role="slider" tabindex="0" aria-label="Seek"
+       aria-valuemin="0" aria-valuemax="9" aria-valuenow="0" aria-valuetext="0 seconds">
+    <div class="rail"><div id="buffer"></div><div id="run"></div><div id="ghost"></div></div>
+  </div>
 </div>
 <p class="hint">
   Nine seconds of an engine that does not exist. Press play, then fit the
-  other crankshaft while it runs.
+  other crankshaft while it runs. The spectrogram is the scrub bar.
 </p>
 
 <noscript>
@@ -801,6 +837,10 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   const play = document.getElementById('play');
   const run = document.getElementById('run');
   const clock = document.getElementById('clock');
+  const track = document.getElementById('track');
+  const buffer = document.getElementById('buffer');
+  const ghost = document.getElementById('ghost');
+  const player = document.querySelector('.player');
   const icon = play.querySelector('path');
   let crank = 'cross';
   let playing = false;
@@ -827,6 +867,16 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
     const at = a.duration ? a.currentTime / a.duration : 0;
     run.style.width = `${at * 100}%`;
     clock.innerHTML = `0:${String(Math.floor(a.currentTime)).padStart(2, '0')}<i> / 0:${String(Math.round(length)).padStart(2, '0')}</i>`;
+    // How much of it has actually arrived. A progress line that shows only the
+    // playhead cannot tell a pause from a stall.
+    const held = a.buffered;
+    buffer.style.width = held.length
+      ? `${(held.end(held.length - 1) / (a.duration || length)) * 100}%`
+      : '0';
+    track.setAttribute('aria-valuemax', (a.duration || length).toFixed(1));
+    track.setAttribute('aria-valuenow', a.currentTime.toFixed(1));
+    track.setAttribute('aria-valuetext',
+      `${Math.round(a.currentTime)} of ${Math.round(a.duration || length)} seconds`);
     for (const head of all('.scope .head')) {
       head.style.left = `${at * 100}%`;
       head.hidden = at === 0;
@@ -836,7 +886,7 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   const start = () => {
     hush();
     playing = true;
-    takes[crank].play();
+    takes[crank].play().catch(() => { playing = false; show(); });
     // Once one take is playing the other is worth having ready.
     const other = takes[crank === 'cross' ? 'flat' : 'cross'];
     if (other.readyState === 0) other.load();
@@ -860,7 +910,7 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
     const to = takes[next];
     to.currentTime = from.currentTime;
     from.pause();
-    if (playing) to.play();
+    if (playing) to.play().catch(() => { playing = false; show(); });
     crank = next;
     for (const el of all('[data-crank]:not(audio)')) el.hidden = el.dataset.crank !== crank;
     for (const b of all('[data-fit]')) b.setAttribute('aria-pressed', b.dataset.fit === crank);
@@ -871,6 +921,69 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 
   play.onclick = () => (playing ? stop() : start());
   for (const b of all('[data-fit]')) b.onclick = () => fit(b.dataset.fit);
+
+  // ── Scrubbing ─────────────────────────────────────────────────────────────
+
+  const seconds = () => takes[crank].duration || length;
+
+  const seek = (to) => {
+    takes[crank].currentTime = Math.min(seconds(), Math.max(0, to));
+    place();
+  };
+
+  const along = (clientX, box) =>
+    Math.min(1, Math.max(0, (clientX - box.left) / box.width));
+
+  // Pointer capture, so that a drag that leaves the track keeps scrubbing
+  // rather than stopping wherever the pointer crossed the edge.
+  const grabbable = (element, locate, onGrab) => {
+    let held = false;
+    const to = (event) => seek(along(event.clientX, element.getBoundingClientRect()) * seconds());
+    element.addEventListener('pointerdown', (event) => {
+      held = true;
+      onGrab?.();
+      element.setPointerCapture(event.pointerId);
+      element.classList.add('dragging');
+      to(event);
+    });
+    element.addEventListener('pointermove', (event) => {
+      locate?.(along(event.clientX, element.getBoundingClientRect()));
+      if (held) to(event);
+    });
+    const let_go = (event) => {
+      if (!held) return;
+      held = false;
+      element.classList.remove('dragging');
+      if (element.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
+    };
+    element.addEventListener('pointerup', let_go);
+    element.addEventListener('pointercancel', let_go);
+  };
+
+  grabbable(track, (at) => { ghost.style.left = `${at * 100}%`; });
+
+  // Nine seconds is short, so a keystroke moves a second and a shifted one
+  // moves a quarter. Five would be most of the recording.
+  const steps = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 };
+  track.addEventListener('keydown', (event) => {
+    if (event.key in steps) {
+      event.preventDefault();
+      seek(takes[crank].currentTime + steps[event.key] * (event.shiftKey ? 0.25 : 1));
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      seek(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      seek(seconds());
+    }
+  });
+
+  for (const a of Object.values(takes)) {
+    a.addEventListener('waiting', () => player.classList.add('stalled'));
+    for (const arrived of ['playing', 'canplay', 'pause'])
+      a.addEventListener(arrived, () => player.classList.remove('stalled'));
+    a.addEventListener('progress', place);
+  }
 
   addEventListener('keydown', (event) => {
     if (event.code !== 'Space' || event.target.closest('button, a')) return;
@@ -890,13 +1003,9 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   // A spectrogram is also a scrub bar. Clicking the crank that is not fitted
   // fits it first.
   for (const scope of all('.scope')) {
-    scope.onclick = (event) => {
+    grabbable(scope, null, () => {
       if (scope.dataset.scope) fit(scope.dataset.scope);
-      const box = scope.getBoundingClientRect();
-      const a = takes[crank];
-      if (a.duration) a.currentTime = ((event.clientX - box.left) / box.width) * a.duration;
-      place();
-    };
+    });
   }
 
 

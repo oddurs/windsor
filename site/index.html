@@ -223,10 +223,27 @@
   blockquote > :first-child { margin-top: 0; }
   blockquote > :last-child { margin-bottom: 0; }
   blockquote pre { font-size: 0.75rem; margin: 1rem 0; }
-  blockquote + figcaption { padding-left: calc(1.5rem + 2px); }
-  figcaption.where { font-size: 0.8125rem; }
-  figcaption.where a { text-decoration-color: transparent; }
-  figcaption.where a:hover { text-decoration-color: var(--faint); }
+
+  /* ── One slug, three bodies ───────────────────────────────────────────────
+     Every plate names itself in the same place, the same size and the same
+     grey: above the thing, before you read it. What differs underneath is the
+     treatment, and the treatment is the whole distinction —
+
+       bare on the page, numbered   the source, as the file has it
+       behind a rule, in the text face   a comment, which is the author talking
+       in a lit panel, behind a prompt   what the program actually printed
+
+     so a reader never has to wonder which of the three they are looking at. */
+  .slug {
+    font-size: 0.6875rem;
+    letter-spacing: 0.01em;
+    padding-bottom: 0.5rem;
+    padding-top: 0;
+  }
+  .slug a { color: inherit; text-decoration-color: transparent; }
+  .slug a:hover { color: var(--ink); text-decoration-color: var(--faint); }
+  /* Speech is indented behind its rule, so its slug is indented to meet it. */
+  .slug.quoted { padding-left: calc(1.5rem + 2px); }
 
   pre.term {
     background: var(--raised);
@@ -242,6 +259,7 @@
     content: "$ " attr(data-from);
     display: block;
     font-size: 0.6875rem;
+    letter-spacing: 0.01em;
     margin: -1.125rem -1rem 1rem calc(1px - max(var(--hang), 1rem));
     padding: 0.625rem 1rem 0.625rem calc(max(var(--hang), 1rem) - 1px);
   }
@@ -341,11 +359,11 @@
 <audio data-crank="flat" src="windsor-flat.m4a" preload="none"></audio>
 
 <figure>
+<figcaption class="slug quoted"><a href="https://github.com/oddurs/windsor/blob/main/apps/record.cpp#L3-L12">record.cpp</a> · lines 3–12</figcaption>
 <blockquote data-from="apps/record.cpp" data-lines="3-12">
 <p>This file contains no acoustics. Every sample it writes was computed by <code>exhaust.hpp</code> out of gas leaving eight cylinders at moments decided by <code>crankshaft.hpp</code>, and all this does is hold the throttle, drain the two banks, add them together and put a RIFF header on the front.</p>
 <p>That is the claim the whole project is making, so it is worth stating in the place where it is cashed: nothing here knows what a V8 sounds like. There is no sample, no oscillator, no filter tuned by ear, no table of harmonics. There is a crankshaft with its throws at 90°, and the noise is what that implies.</p>
 </blockquote>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/record.cpp#L3-L12">record.cpp</a> · lines 3–12</figcaption>
 </figure>
 
 <nav>
@@ -371,13 +389,13 @@
   At the flywheel the two keep identical time.
 </p>
 <figure>
+<figcaption class="slug quoted"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L32-L39">crankshaft.hpp</a> · lines 32–39</figcaption>
 <blockquote data-from="include/engine/crankshaft.hpp" data-lines="32-39">
 <p>But an engine does not exhale through its flywheel. It exhales through two exhaust manifolds, one per bank, and the manifold does not hear the engine — it hears its own four cylinders. Ask each bank what it heard:</p>
 <pre>CROSS-PLANE bank:   90° — 180° — 270° — 180°       lopsided
 FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <p>That is the entire difference. That is the burble and that is the shriek.</p>
 </blockquote>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L32-L39">crankshaft.hpp</a> · lines 32–39</figcaption>
 </figure>
 <p>
   The part is the crankshaft. Seen from the nose, its four throws make either
@@ -474,6 +492,7 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <figure>
 <div class="swap loose">
 <div data-crank="cross">
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L88-L105">windsor.hpp</a> · lines 88–105</figcaption>
 <pre class="source" data-from="include/engine/windsor.hpp" data-lines="88-105" style="counter-reset: line 87"><span>inline Crankshaft cross_plane_crank() {</span>
 <span>    return Crankshaft{</span>
 <span>        <em>90.0_deg</em>,</span>
@@ -492,9 +511,9 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>        0.20                       <i>// kg·m², crank + damper + flywheel + clutch</i></span>
 <span>    };</span>
 <span>}</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L88-L105">windsor.hpp</a> · lines 88–105</figcaption>
 </div>
 <div data-crank="flat" hidden>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L132-L143">windsor.hpp</a> · lines 132–143</figcaption>
 <pre class="source" data-from="include/engine/windsor.hpp" data-lines="132-143" data-diff="88-105" style="counter-reset: line 131"><span>inline Crankshaft <mark>flat_plane_crank</mark>() {</span>
 <span>    return Crankshaft{</span>
 <span>        <em>90.0_deg</em>,</span>
@@ -507,13 +526,13 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>                                   <i>// counterweight, having less to cancel</i></span>
 <span>    };</span>
 <span>}</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L132-L143">windsor.hpp</a> · lines 132–143</figcaption>
 <figcaption>Marked: everything that differs from the cross-plane crank.</figcaption>
 </div>
 </div>
 </figure>
 <p>One short function works out the rest:</p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L170-L177">crankshaft.hpp</a> · lines 170–177</figcaption>
 <pre class="source" data-from="include/engine/crankshaft.hpp" data-lines="170-177" style="counter-reset: line 169"><span><i>// The number cast into the intake manifold. Derived, never declared.</i></span>
 <span>std::array&lt;int, cylinder_count&gt; firing_order() const {</span>
 <span>    std::array&lt;int, cylinder_count&gt; order{};</span>
@@ -522,7 +541,6 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>              [&amp;](int a, int b) { return tdc_[a - 1] &lt; tdc_[b - 1]; });</span>
 <span>    return order;</span>
 <span>}</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L170-L177">crankshaft.hpp</a> · lines 170–177</figcaption>
 </figure>
 <figure>
 <div class="swap">
@@ -550,21 +568,22 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   exist at that surface and nowhere inside.
 </p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L42-L47">geometry.hpp</a> · lines 42–47</figcaption>
 <pre class="source" data-from="include/engine/geometry.hpp" data-lines="42-47" style="counter-reset: line 41"><span><i>// Named parameters. A cylinder is quoted as bore × stroke and you should not</i></span>
 <span><i>// be able to swap them by accident.</i></span>
 <span>struct Bore             { double m;     };  <i>// cylinder diameter</i></span>
 <span>struct Stroke           { double m;     };  <i>// full travel, TDC to BDC</i></span>
 <span>struct RodLength        { double m;     };  <i>// centre to centre</i></span>
 <span>struct CompressionRatio { double ratio; };  <i>// swept+clearance over clearance</i></span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L42-L47">geometry.hpp</a> · lines 42–47</figcaption>
 </figure>
 <p>The inch is converted at compile time, and costs nothing when the engine runs:</p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/si.hpp#L62-L62">si.hpp</a> · line 62</figcaption>
 <pre class="source" data-from="include/engine/si.hpp" data-lines="62-62" style="counter-reset: line 61"><span>consteval double operator&quot;&quot;_in (long double v) { return double(v) * 0.0254;   }</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/si.hpp#L62-L62">si.hpp</a> · line 62</figcaption>
 </figure>
 <p>So the short block reads like the page of the manual it was taken from:</p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L28-L44">windsor.hpp</a> · lines 28–44</figcaption>
 <pre class="source" data-from="include/engine/windsor.hpp" data-lines="28-44" style="counter-reset: line 27"><span>inline constexpr Geometry short_block() {</span>
 <span>    return Geometry{</span>
 <span>        Bore{<em>4.000_in</em>},            <i>// standard, before any overbore</i></span>
@@ -582,7 +601,6 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>                                   <i>// the piston crown</i></span>
 <span>    };</span>
 <span>}</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/windsor.hpp#L28-L44">windsor.hpp</a> · lines 28–44</figcaption>
 </figure>
 <p>And the displacement is worked out, not quoted:</p>
 <figure>
@@ -591,6 +609,7 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 </figure>
 <p>A crank that cannot exist is refused:</p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L262-L282">crankshaft.hpp</a> · lines 262–282</figcaption>
 <pre class="source" data-from="include/engine/crankshaft.hpp" data-lines="262-282" style="counter-reset: line 261"><span><i>// A crank that cannot exist should not compile into an engine that runs.</i></span>
 <span>void validate() const {</span>
 <span>    std::array&lt;int, journal_count&gt; per_journal{};</span>
@@ -612,7 +631,6 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>            if (std::abs(tdc_[a] - tdc_[b]) &lt; 1e-9)</span>
 <span>                throw std::invalid_argument{&quot;two cylinders share a firing angle&quot;};</span>
 <span>}</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/crankshaft.hpp#L262-L282">crankshaft.hpp</a> · lines 262–282</figcaption>
 </figure>
 
 <h3>Comments carry the argument</h3>
@@ -621,6 +639,7 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   with. The code says what. The comments say why.
 </p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L104-L114">geometry.hpp</a> · lines 104–114</figcaption>
 <pre class="source" data-from="include/engine/geometry.hpp" data-lines="104-114" style="counter-reset: line 103"><span><i>// dV/dθ — the rate the chamber opens, per radian of crank. Positive on the</i></span>
 <span><i>// way down. This is what turns pressure into torque: the work a gas does on</i></span>
 <span><i>// the crank in a small rotation is p·dV, so the instantaneous torque a</i></span>
@@ -632,7 +651,6 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>    const double root  = std::sqrt(l * l - a * a * sin_t * sin_t);</span>
 <span>    return piston_area_ * a * sin_t * (1.0 + a * cos_t <i>/</i> root);</span>
 <span>}</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/geometry.hpp#L104-L114">geometry.hpp</a> · lines 104–114</figcaption>
 </figure>
 
 <h3>The standard library, and nothing else</h3>
@@ -643,6 +661,7 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   written by hand:
 </p>
 <figure>
+<figcaption class="slug"><a href="https://github.com/oddurs/windsor/blob/main/apps/wav.hpp#L53-L61">wav.hpp</a> · lines 53–61</figcaption>
 <pre class="source" data-from="apps/wav.hpp" data-lines="53-61" style="counter-reset: line 52"><span>tag(&quot;RIFF&quot;);  u32(36 + data_bytes);  tag(&quot;WAVE&quot;);</span>
 <span>tag(&quot;fmt &quot;);  u32(16);</span>
 <span>u16(1);                                   <i>// PCM, uncompressed</i></span>
@@ -652,7 +671,6 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
 <span>u16(channels * 2);                               <i>// block align</i></span>
 <span>u16(16);                                         <i>// bits per sample</i></span>
 <span>tag(&quot;data&quot;);  u32(data_bytes);</span></pre>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/apps/wav.hpp#L53-L61">wav.hpp</a> · lines 53–61</figcaption>
 </figure>
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
@@ -799,10 +817,10 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
   attempt ends like this:
 </p>
 <figure>
+<figcaption class="slug quoted"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/induction.hpp#L88-L91">induction.hpp</a> · lines 88–91</figcaption>
 <blockquote data-from="include/engine/induction.hpp" data-lines="88-91">
 <p>AND IT STILL COULD NOT BE HELD AT 1000 TO 1500 RPM, at any controller gain from 0.6 to 12 N·m per rpm, on a fresh engine per point, with the load lagged or not. I do not know why. That is the next thing to find out, and saying so is better than the explanation I would have to invent to avoid it.</p>
 </blockquote>
-<figcaption class="where"><a href="https://github.com/oddurs/windsor/blob/main/include/engine/induction.hpp#L88-L91">induction.hpp</a> · lines 88–91</figcaption>
 </figure>
 <p>
   A limitation nobody attempted is a guess. A limitation somebody built,

@@ -65,11 +65,19 @@ def passage(path, spec):
     return textwrap.dedent('\n'.join(lines[first - 1:last])).split('\n')
 
 
-def caption_for(path, spec):
+def caption_for(path, spec, quoted=False):
+    """The slug: one line above a plate saying where it came from.
+
+    Above, and not below, because every plate says it in the same place now —
+    a terminal names the command that produced it before it shows the output,
+    and a passage of source should name the file before it shows the lines.
+    Knowing what you are about to read is worth more than being told after.
+    """
     (first, last), = ranges(spec)
     name = pathlib.PurePath(path).name
     where = f'line {first}' if first == last else f'lines {first}–{last}'
-    return (f'<figcaption class="where"><a href="{github}{path}#L{first}-L{last}">'
+    kind = 'slug quoted' if quoted else 'slug'
+    return (f'<figcaption class="{kind}"><a href="{github}{path}#L{first}-L{last}">'
             f'{name}</a> · {where}</figcaption>')
 
 
@@ -151,7 +159,7 @@ def said(attrs, body):
     if body.strip() and squeeze(body) != squeeze(fresh):
         problems.append(f'{path} {spec} no longer reads as the page quotes it')
         return None
-    return fresh, '', caption_for(path, spec)
+    return fresh, '', caption_for(path, spec, quoted=True)
 
 
 # ── Output ────────────────────────────────────────────────────────────────
@@ -231,8 +239,8 @@ def term(attrs, body):
 # ── The page ──────────────────────────────────────────────────────────────
 
 plate = re.compile(
-    r'<(?P<tag>pre|blockquote)(?P<attrs>[^>]*\bdata-from="[^"]+"[^>]*)>(?P<body>.*?)</(?P=tag)>'
-    r'(?P<caption>\n<figcaption class="where">.*?</figcaption>)?', re.S)
+    r'(?P<slug><figcaption class="slug[^"]*">.*?</figcaption>\n)?'
+    r'<(?P<tag>pre|blockquote)(?P<attrs>[^>]*\bdata-from="[^"]+"[^>]*)>(?P<body>.*?)</(?P=tag)>', re.S)
 
 
 def reset(found):
@@ -245,7 +253,8 @@ def reset(found):
     if 'art' in attrs.get('class', ''):
         body = f'<span>{body}</span>'
     kept = re.sub(r' (style|data-fill)="[^"]*"', '', found['attrs'])
-    return f'<{found["tag"]}{kept}{style}>{body}</{found["tag"]}>' + (f'\n{caption}' if caption else '')
+    plate = f'<{found["tag"]}{kept}{style}>{body}</{found["tag"]}>'
+    return (f'{caption}\n' if caption else '') + plate
 
 
 page = index.read_text()

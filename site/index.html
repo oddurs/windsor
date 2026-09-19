@@ -264,6 +264,15 @@
     padding: 0.625rem 1rem 0.625rem calc(max(var(--hang), 1rem) - 1px);
   }
   figure > pre.term + pre.term { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+  /* The live instrument wears the same panel as the printed ones, because it
+     is the same thing: what the program is saying, while it says it. */
+  pre.live::before { content: "$ " attr(data-cmd); }
+  pre.live { min-height: 11.5rem; }
+  .bore { color: var(--faint); }
+  .power { color: var(--coral); }
+  .exhaust { color: var(--fog); }
+  .intake { color: var(--cyan); }
+  .compress { color: var(--sky); }
   .c1 { font-weight: 600; }
   .c2 { color: var(--faint); }
   .c31 { color: var(--coral); }
@@ -688,6 +697,14 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
     windsor card        let it draw its own picture, as Watt did
     windsor record      stand behind it with two microphones
     windsor verify      check every number this project quotes</pre>
+
+<p>Five of the six print something and stop. The sixth does not: <code>windsor run</code> is a gauge cluster wired to the sensors, redrawn thirty times a second while the engine idles in front of you. It is the one instrument a page cannot quote, so the page runs it instead — eight bores, each piston drawn where the crank-slider puts it, and the firing order marching around them.</p>
+
+<figure>
+<pre class="term live" data-cmd="./windsor run" id="bores"></pre>
+</figure>
+
+<p>Nothing there is a loop of frames. Every piston is placed by the same equation the linkage is, and the order they fire in is worked out from the forging on the way past — fit the flat crank and watch the march change, because that is the only thing that changed. At idle this happens eleven times a second; here it is slowed to one cycle every three, which is the only liberty taken.</p>
 </figure>
 
 <h3>The indicator card</h3>
@@ -1268,6 +1285,109 @@ FLAT-PLANE  bank:  180° — 180° — 180° — 180°       even</pre>
     }
   };
 
+
+
+  // ── The gauge cluster ─────────────────────────────────────────────────────
+  //
+  // The one instrument that cannot be quoted, so it is run. Nothing here is a
+  // loop of recorded frames: the pistons are placed by the crank-slider, and
+  // the order the cylinders fire in is derived from the forging exactly as
+  // crankshaft.hpp derives it —
+  //
+  //      φ = (ψ ± ½V  mod 360°) + 360°·rev
+  //
+  // which is why fitting the flat crank changes the march. It is the only
+  // thing that changed.
+
+  const bores = document.getElementById('bores');
+  if (bores) {
+    const vee = 90;
+    const throws = { cross: [45, 315, 135, 225], flat: [45, 225, 45, 225] };
+    // journal, lean, revolution. Left bank leads and right trails, which is
+    // the sign convention crankshaft.hpp sets and the only arbitrary line in
+    // either of them. Inverted, the order comes out 2-5-1-4-7-3-8-6, which is
+    // not cast into anything.
+    const rods = {
+      cross: [[0, -1, 0], [1, -1, 0], [2, -1, 1], [3, -1, 0],
+              [0, 1, 0], [1, 1, 1], [2, 1, 1], [3, 1, 1]],
+      flat: [[0, -1, 0], [1, -1, 0], [2, -1, 1], [3, -1, 1],
+             [0, 1, 0], [1, 1, 0], [2, 1, 1], [3, 1, 1]],
+    };
+    // Ford's, in inches, because the only thing being drawn is a ratio.
+    const stroke = 3.0, rod = 5.09, throwRadius = stroke / 2;
+    const turn = (d) => ((d % 360) + 360) % 360;
+
+    // Left bank leads, right trails: the sign convention crankshaft.hpp sets.
+    const order = (plane) =>
+      rods[plane].map(([journal, lean, revolution], i) => {
+        const seat = turn(throws[plane][journal] + (lean * vee) / 2);
+        return { cylinder: i + 1, seat, fires: seat + 360 * revolution };
+      }).sort((a, b) => a.fires - b.fires);
+
+    // How far down the bore, 0 at top dead centre and 1 at the bottom.
+    const down = (degrees) => {
+      const a = (degrees * Math.PI) / 180;
+      const pin = throwRadius * Math.cos(a)
+        + Math.sqrt(rod * rod - (throwRadius * Math.sin(a)) ** 2);
+      return (throwRadius + rod - pin) / stroke;
+    };
+
+    const names = ['power', 'exhaust', 'intake', 'compress'];
+    const cells = 24;
+
+    const frame = (angle, plane) => {
+      const marching = order(plane);
+      // Printed because it is worked out, not held: the same eight numbers
+      // that are cast into a 1968 intake manifold.
+      const from = marching.findIndex((c) => c.cylinder === 1);
+      const named = marching.concat(marching).slice(from, from + 8)
+        .map((c) => c.cylinder).join('-');
+      const rows = [
+        `  <span class="c1">302 Windsor</span>   ${plane}-plane   `
+          + `firing order <span class="c1">${named}</span>`,
+        '',
+        '   cyl        bore, TDC to BDC              stroke',
+      ];
+      for (const { cylinder, seat, fires } of marching) {
+        const at = Math.min(cells - 1, Math.round(down(angle - seat) * (cells - 1)));
+        const phase = names[Math.floor(turn((angle - fires) / 2) / 90)];
+        const bore = '─'.repeat(at) + '█' + ' '.repeat(cells - 1 - at);
+        rows.push(`    ${cylinder}   <span class="bore">│</span>`
+          + `<span class="${phase}">${bore}</span>`
+          + `<span class="bore">│</span>  <span class="${phase}">${phase.padEnd(8)}</span>`);
+      }
+      return rows.join('\n');
+    };
+
+    // Three seconds a cycle. At idle it is eleven times faster and a blur,
+    // which is honest and no use to anybody reading it.
+    const perSecond = 720 / 3;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let angle = 0, last = 0, spinning = false;
+
+    const tick = (now) => {
+      if (!spinning) return;
+      angle = turn((angle + ((now - last) / 1000) * perSecond) / 2) * 2;
+      last = now;
+      bores.innerHTML = frame(angle, crank);
+      requestAnimationFrame(tick);
+    };
+
+    bores.innerHTML = frame(0, crank);
+    if (!still) {
+      new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !spinning) {
+            spinning = true;
+            last = performance.now();
+            requestAnimationFrame(tick);
+          } else if (!entry.isIntersecting) {
+            spinning = false;
+          }
+        }
+      }, { rootMargin: '100px' }).observe(bores);
+    }
+  }
 
   draw();
   place();

@@ -1,7 +1,16 @@
+# What the build makes.
 windsor
+compile_commands.json
+
+# The recordings are output too. The two the site plays are shipped as
+# site/*.m4a; site/tools/record refreshes them.
 *.wav
 
-# The two recordings the site plays are output as well, but they are shipped,
-# as site/*.m4a. site/tools/record refreshes them.
+# Mine, not the project's. These sit in the working copy and do not belong to
+# anyone who clones it.
+CLAUDE.md
+AGENTS.md
+.cairn/
+cairn/
+
 .DS_Store
-compile_commands.json
